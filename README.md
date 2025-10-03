@@ -4,7 +4,7 @@
 
 ## 📖 Sobre o Projeto
 
-O **Baita Ajuda** é um projeto acadêmico desenvolvido para a disciplina de **[Nome da Disciplina]** do curso de **[Nome do Curso]** da **[Nome da Universidade]**.
+O **Baita Ajuda** é um projeto acadêmico desenvolvido para a disciplina de **INF1060** do curso de **Ciência da Computação** da **UFRGS**.
 
 Trata-se de uma plataforma web criada para centralizar e facilitar o acesso a informações sobre abrigos durante situações de calamidade em Porto Alegre e região. O objetivo é conectar pessoas que precisam de ajuda a abrigos seguros, além de organizar as necessidades de cada local para direcionar doações de forma eficiente.
 
@@ -96,3 +96,4 @@ Siga os passos abaixo para configurar и rodar a aplicação localmente para ava
     npm install
     npm run dev
     ```
+
