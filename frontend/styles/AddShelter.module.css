@@ -140,11 +140,17 @@
   background-color: #545b62;
 }
 
+.checkboxLabel input[type="checkbox"] {
+  margin-right: 8px;
+  vertical-align: middle;
+  width: auto;
+}
+
 @media (max-width: 768px) {
   .formRow {
     grid-template-columns: 1fr;
   }
-  
+
   .formActions {
     flex-direction: column;
   }

@@ -18,7 +18,9 @@ CREATE TABLE Abrigos (
     nome VARCHAR(255) NOT NULL,
     endereco TEXT NOT NULL,
     localizacao GEOGRAPHY(Point, 4326), -- Armazena latitude e longitude para buscas por proximidade.
-    tipo_abrigo VARCHAR(50) CHECK (tipo_abrigo IN ('Familiar', 'Feminino', 'Masculino', 'Pets')),
+    aceita_pets BOOLEAN DEFAULT FALSE NOT NULL,
+    tipo_feminino BOOLEAN DEFAULT FALSE NOT NULL,
+    tipo_masculino BOOLEAN DEFAULT FALSE NOT NULL,
     vagas_disponiveis INT NOT NULL DEFAULT 0,
     formulario_inscricao_url VARCHAR(255),
     media_avaliacoes NUMERIC(3, 2) DEFAULT 0.0,

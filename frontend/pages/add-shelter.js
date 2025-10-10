@@ -8,7 +8,7 @@ export default function AddShelter() {
   const [formData, setFormData] = useState({
     nome: '',
     endereco: '',
-    tipo_abrigo: '',
+    tipo_abrigo: [],
     vagas_disponiveis: '',
     formulario_inscricao_url: ''
   })
@@ -16,11 +16,30 @@ export default function AddShelter() {
   const [loading, setLoading] = useState(false)
   const [apiError, setApiError] = useState('')
   const router = useRouter()
+  const opcoesDeAbrigo = [
+      { value: "Feminino", label: "Feminino" },
+      { value: "Masculino", label: "Masculino" },
+      { value: "Pets", label: "Pets" },
+  ];
+
+  const shelterTypes = {
+      aceita_pets: false,
+      tipo_feminino: false,
+      tipo_masculino: false,
+  };
+
+ const selectedTypes = formData.tipo_abrigo;
+
+ for (const type of selectedTypes) {
+     if (type === 'Pets') shelterTypes.aceita_pets = true;
+     if (type === 'Feminino') shelterTypes.tipo_feminino = true;
+     if (type === 'Masculino') shelterTypes.tipo_masculino = true;
+ }
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    
+
     // Limpar erros quando usuário digitar
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
@@ -30,27 +49,46 @@ export default function AddShelter() {
     }
   }
 
+  const handleCheckboxChange = (e) => {
+      const { value, checked } = e.target;
+
+      setFormData(prevFormData => {
+	    if (checked) {
+		return {
+		    ...prevFormData,
+		    tipo_abrigo: [...prevFormData.tipo_abrigo, value]
+		};
+	    }
+	  else {
+	      return {
+		  ...prevFormData,
+		  tipo_abrigo: prevFormData.tipo_abrigo.filter(item => item !== value)
+	      };
+	  }
+	});
+  };
+
   const validateForm = () => {
     const newErrors = {}
-    
+
     if (!formData.nome.trim()) {
       newErrors.nome = 'Nome do abrigo é obrigatório'
     }
-    
+
     if (!formData.endereco.trim()) {
       newErrors.endereco = 'Endereço é obrigatório'
     }
-    
+
     if (!formData.tipo_abrigo) {
       newErrors.tipo_abrigo = 'Tipo de abrigo é obrigatório'
     }
-    
+
     if (!formData.vagas_disponiveis) {
       newErrors.vagas_disponiveis = 'Número de vagas é obrigatório'
     } else if (parseInt(formData.vagas_disponiveis) < 0) {
       newErrors.vagas_disponiveis = 'Número de vagas deve ser maior ou igual a zero'
     }
-    
+
     // Validar URL se fornecida
     if (formData.formulario_inscricao_url) {
       try {
@@ -59,17 +97,17 @@ export default function AddShelter() {
         newErrors.formulario_inscricao_url = 'URL inválida'
       }
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     console.log('=== SHELTER CREATION ===')
     console.log('Form data:', formData)
-    
+
     if (!validateForm()) {
       console.log('Form validation failed')
       return
@@ -123,7 +161,7 @@ export default function AddShelter() {
 
       console.log('Shelter created successfully:', data.abrigo)
       alert(`Abrigo "${data.abrigo.nome}" cadastrado com sucesso!`)
-      
+
       // Redirecionar para página inicial
       router.push('/')
 
@@ -157,14 +195,14 @@ export default function AddShelter() {
             <p className={styles.subtitle}>
               Cadastre um abrigo para ajudar pessoas em situação de emergência
             </p>
-            
+
             {/* Erro da API */}
             {apiError && (
               <div className={styles.errorBanner}>
                 {apiError}
               </div>
             )}
-            
+
             <form onSubmit={handleSubmit}>
               <div className={styles.formGroup}>
                 <label htmlFor="nome">Nome do Abrigo *</label>
@@ -196,40 +234,42 @@ export default function AddShelter() {
                 {errors.endereco && <span className={styles.errorMsg}>{errors.endereco}</span>}
               </div>
 
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="tipo_abrigo">Tipo de Abrigo *</label>
-                  <select
-                    id="tipo_abrigo"
-                    name="tipo_abrigo"
-                    value={formData.tipo_abrigo}
-                    onChange={handleChange}
-                    className={errors.tipo_abrigo ? styles.inputError : ''}
-                    required
-                  >
-                    <option value="">Selecione...</option>
-                    <option value="Aceita pets">Aceita pets</option>
-                    <option value="Não aceita pets">Não aceita pets</option>
-                  </select>
-                  {errors.tipo_abrigo && <span className={styles.errorMsg}>{errors.tipo_abrigo}</span>}
-                </div>
+	      <div className={styles.formGroup}>
+		<label>Tipo de Abrigo *</label>
 
-                <div className={styles.formGroup}>
-                  <label htmlFor="vagas_disponiveis">Vagas Disponíveis *</label>
-                  <input
-                    type="number"
-                    id="vagas_disponiveis"
-                    name="vagas_disponiveis"
-                    value={formData.vagas_disponiveis}
-                    onChange={handleChange}
-                    className={errors.vagas_disponiveis ? styles.inputError : ''}
-                    min="0"
-                    placeholder="0"
-                    required
+		{opcoesDeAbrigo.map((opcao) => (
+		<label key={opcao.value} className={styles.checkboxLabel}>
+		  <input
+		    type="checkbox"
+		    name="tipo_abrigo"
+		    id="tipo_abrigo"
+		    value={opcao.value}
+		    checked={formData.tipo_abrigo.includes(opcao.value)}
+		    onChange={handleCheckboxChange}
+		    />
+		  {/* CORREÇÃO: Apenas o texto, sem a tag <label> envolvendo */}
+		    {opcao.label}
+		  </label>
+		  ))}
+
+		  {errors.tipo_abrigo && <span className={styles.errorMsg}>{errors.tipo_abrigo}</span>}
+	      </div>
+
+	      <div className={styles.formGroup}>
+                <label htmlFor="vagas_disponiveis">Vagas Disponíveis *</label>
+                <input
+                  type="number"
+                  id="vagas_disponiveis"
+                  name="vagas_disponiveis"
+                  value={formData.vagas_disponiveis}
+                  onChange={handleChange}
+                  className={errors.vagas_disponiveis ? styles.inputError : ''}
+                  min="0"
+                  placeholder="0"
+                  required
                   />
-                  {errors.vagas_disponiveis && <span className={styles.errorMsg}>{errors.vagas_disponiveis}</span>}
-                </div>
-              </div>
+                {errors.vagas_disponiveis && <span className={styles.errorMsg}>{errors.vagas_disponiveis}</span>}
+	      </div>
 
               <div className={styles.formGroup}>
                 <label htmlFor="formulario_inscricao_url">
@@ -248,8 +288,8 @@ export default function AddShelter() {
               </div>
 
               <div className={styles.formActions}>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className={`${styles.btn} ${styles.btnPrimary}`}
                   disabled={loading}
                 >
@@ -262,8 +302,8 @@ export default function AddShelter() {
                     'Cadastrar Abrigo'
                   )}
                 </button>
-                <Link 
-                  href="/" 
+                <Link
+                  href="/"
                   className={`${styles.btn} ${styles.btnSecondary}`}
                 >
                   Cancelar
