@@ -250,7 +250,7 @@ app.get('/api/abrigos', async (req, res) => {
 	const totalShelters = parseInt(totalResult.rows[0].count);
 	const totalPages = Math.ceil(totalShelters / limit);
 
-	let orderByClause = 'ORDER BY a.data_criacao DESC';
+	let orderByClause = 'ORDER BY a.media_avaliacoes DESC';
 	if (lat && lng) {
 	    // Order by the calculated distance, ascending
 	    orderByClause = 'ORDER BY distance_meters ASC';
