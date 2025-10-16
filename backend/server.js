@@ -155,20 +155,31 @@ app.post('/api/abrigos', async (req, res) => {
       return badRequest(res, 'Spots cannot be negative');
     }
 
-    // Validar tipo_abrigo se fornecido
-    const validTypes = ['Familiar', 'Feminino', 'Masculino', 'Pets'];
-    if (tipo_abrigo && !validTypes.includes(tipo_abrigo)) {
-      return badRequest(res, 'Invalid shelter type');
-    }
+      // Validar tipo_abrigo se fornecido
+      const validTypes = ['Pets', 'Feminino', 'Masculino'];
+      if (tipo_abrigo && (
+	  !Array.isArray(tipo_abrigo) ||
+	      !tipo_abrigo.every(type => validTypes.includes(type))
+      )) {
+	  return badRequest(res, `Invalid type provided. Options: ${validTypes.join(', ')}`);
+      }
 
+      const flags = {
+	  tipo_feminino: tipo_abrigo.includes('Feminino'),
+	  aceita_pets: tipo_abrigo.includes('Pets'),
+	  tipo_masculino: tipo_abrigo.includes('Masculino'),
+      };
+
+      console.log(tipo_abrigo)
+      console.log(flags)
     // Limpar strings apenas se não forem nulas/undefined
     const cleanNome = nome ? nome.trim() : '';
     const cleanEndereco = endereco ? endereco.trim() : '';
     const cleanUrl = formulario_inscricao_url ? formulario_inscricao_url.trim() : null;
 
     const result = await pool.query(
-      'INSERT INTO Abrigos (usuario_id, nome, endereco, tipo_abrigo, vagas_disponiveis, formulario_inscricao_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [usuario_id, cleanNome, cleanEndereco, tipo_abrigo || null, spots, cleanUrl]
+	'INSERT INTO Abrigos (usuario_id, nome, endereco, aceita_pets, tipo_feminino, tipo_masculino, vagas_disponiveis, formulario_inscricao_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+	[usuario_id, cleanNome, cleanEndereco, flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino, spots, cleanUrl]
     );
 
     console.log('Shelter created:', result.rows[0].nome, 'for user:', usuario_id);
