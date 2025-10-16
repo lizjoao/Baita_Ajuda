@@ -195,12 +195,18 @@ app.get('/api/users', async (req, res) => {
 app.get('/api/abrigos', async (req, res) => {
     try {
 
-	const { search, min_vagas, tipo_feminino, aceita_pets, tipo_masculino } = req.query;
+	const { search, min_vagas, tipo_feminino, aceita_pets, tipo_masculino, lat, lng } = req.query;
+	const page = parseInt(req.query.page || '1');
+	const limit = parseInt(req.query.limit || '10');
+	const offset = (page - 1) * limit;
 
-	let baseQuery = `
-      SELECT a.*, u.nome as responsavel_nome
-      FROM Abrigos a
-      JOIN Usuarios u ON a.usuario_id = u.id
+	let selectClause = 'SELECT a.*, u.nome as responsavel_nome';
+	if (lat && lng) {
+	    // ST_Distance returns distance in meters
+	    selectClause += `, ST_Distance(a.localizacao, ST_MakePoint(${lng}, ${lat})::geography) as distance_meters`;
+	}
+
+	let whereClause = `
       WHERE a.ativo = true
     `;
 
@@ -209,30 +215,58 @@ app.get('/api/abrigos', async (req, res) => {
 
 	if (search) {
 	    params.push(`%${search}%`); // Add wildcards for partial matching
-	    baseQuery += ` AND (a.nome ILIKE $${paramIndex} OR a.endereco ILIKE $${paramIndex++})`; // ILIKE is case-insensitive
+	    whereClause += ` AND (a.nome ILIKE $${paramIndex} OR a.endereco ILIKE $${paramIndex++})`; // ILIKE is case-insensitive
 	}
 	if (min_vagas) {
 	    params.push(parseInt(min_vagas));
-	    baseQuery += ` AND a.vagas_disponiveis >= $${paramIndex++}`;
+	    whereClause += ` AND a.vagas_disponiveis >= $${paramIndex++}`;
 	}
 
 	if (tipo_feminino === 'true') { // Query params are strings
-	    baseQuery += ` AND a.tipo_feminino = true`;
+	    whereClause += ` AND a.tipo_feminino = true`;
 	}
 
 	if (tipo_masculino === 'true') { // Query params are strings
-	    baseQuery += ` AND a.tipo_feminino = true`;
+	    whereClause += ` AND a.tipo_feminino = true`;
 	}
 
 	if (aceita_pets === 'true') {
-	    baseQuery += ` AND a.aceita_pets = true`;
+	    whereClause += ` AND a.aceita_pets = true`;
 	}
 
-	baseQuery += ' ORDER BY a.data_criacao DESC';
+	const countQuery = `SELECT COUNT(*) FROM Abrigos a ${whereClause}`;
+	const totalResult = await pool.query(countQuery, params);
+	const totalShelters = parseInt(totalResult.rows[0].count);
+	const totalPages = Math.ceil(totalShelters / limit);
 
-	const result = await pool.query(baseQuery, params);
+	let orderByClause = 'ORDER BY a.data_criacao DESC';
+	if (lat && lng) {
+	    // Order by the calculated distance, ascending
+	    orderByClause = 'ORDER BY distance_meters ASC';
+	}
 
-	res.json({ success: true, abrigos: result.rows });
+	const resultsQuery = `
+      ${selectClause}
+      FROM Abrigos a
+      JOIN Usuarios u ON a.usuario_id = u.id
+      ${whereClause}
+      ${orderByClause}
+      LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+    `;
+	const result = await pool.query(resultsQuery, [...params, limit, offset]);
+//	const result = await pool.query(baseQuery, params);
+
+	//	res.json({ success: true, abrigos: result.rows });
+	res.json({
+	    success: true,
+	    abrigos: result.rows,
+	    pagination: {
+		currentPage: page,
+		totalPages: totalPages,
+		totalShelters: totalShelters,
+		limit: limit
+	    }
+	});
 
     } catch (error) {
 	handleError(res, error, 'Shelters listing failed');

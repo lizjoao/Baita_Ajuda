@@ -1,163 +1,237 @@
 .container {
-  min-height: 100vh;
-  background-color: white;
+    min-height: 100vh;
+    background-color: white;
 }
 
 .header {
-  background-color: #007bff;
-  color: white;
-  padding: 1.5rem 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #007bff;
+    color: white;
+    padding: 1.5rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .headerContent {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-  text-align: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    text-align: center;
 }
 
 .headerContent h1 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 600;
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
 }
 
 .main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-  text-align: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    text-align: center;
 }
 
 .main h2 {
-  color: #333;
-  margin-bottom: 1rem;
+    color: #333;
+    margin-bottom: 1rem;
 }
 
 .main p {
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 2rem;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 2rem;
 }
 
 .buttons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 .btn {
-  display: inline-block;
-  background-color: #007bff;
-  color: white;
-  text-decoration: none;
-  padding: 12px 24px;
-  border-radius: 5px;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
 }
 
 .btn:hover {
-  background-color: #0056b3;
+    background-color: #0056b3;
 }
-
-@media (max-width: 768px) {
-  .buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .btn {
-    width: 200px;
-  }
-}
-
-
 
 .shelterListContainer {
-  width: 100%;
-  max-width: 800px;
-  margin-top: 40px;
-  text-align: center;
-  margin-left: auto;
-  margin-right: auto;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 40px;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .shelterList {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
 }
 
 .shelterCard {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 16px;
-  text-align: left;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: left;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .shelterCard h3 {
-  margin-top: 0;
-  color: #333;
+    margin-top: 0;
+    color: #333;
 }
 
 .tags {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
 }
 
 .tag {
-  background-color: #e0e0e0;
-  color: #555;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: bold;
+    background-color: #e0e0e0;
+    color: #555;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
 }
 
 .errorMsg {
-  color: #d9534f;
-  font-weight: bold;
+    color: #d9534f;
+    font-weight: bold;
 }
 
 /* Add these styles to styles/Home.module.css */
 
 .filterContainer {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 800px;
-  margin-top: 20px;
-  padding: 16px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 20px;
+    padding: 16px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
 }
 
 .searchInput {
-  flex-grow: 1;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
 .vagasInput {
-  width: 120px;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+    width: 120px;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
 .checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.paginationContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 16px;
+    width: 100%;
+}
+
+.paginationContainer button,
+.paginationContainer select {
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.paginationContainer button:disabled {
+    background-color: #f0f0f0;
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+.paginationContainer span {
+    font-weight: bold;
+}
+
+.distanceButton {
+  padding: 8px 12px;
+  border: 1px solid #007bff;
+  background-color: #fff;
+  color: #007bff;
+  border-radius: 4px;
   cursor: pointer;
+  white-space: nowrap; /* Prevents text from wrapping */
+}
+
+.distanceButton:hover {
+  background-color: #f0f8ff;
+}
+
+.distanceText {
+  font-weight: bold;
+  color: #007bff;
+}
+
+@media (max-width: 768px) {
+
+    .main {
+	padding: 1rem;
+    }
+
+    .buttons {
+	flex-direction: column;
+	align-items: center;
+    }
+
+    .btn {
+	width: 200px;
+    }
+
+
+    .buttons {
+	flex-direction: column;
+	width: 100%;
+	align-items: center;
+    }
+
+    .filterContainer {
+	flex-direction: column;
+	align-items: stretch;
+	padding: 1rem;
+    }
+
+    .searchInput,
+    .vagasInput,
+    .checkboxLabel {
+	width: 100%;
+    }
+
+    .shelterListContainer {
+	padding: 0;
+    }
 }
