@@ -1,0 +1,379 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+}
+
+.header {
+  background-color: #007bff;
+  color: white;
+  padding: 1rem 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  text-align: center;
+}
+
+.headerContent h1 {
+  margin: 0;
+}
+
+.headerContent h1 a {
+  color: white;
+  text-decoration: none;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.headerContent h1 a:hover {
+  text-decoration: underline;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem 1rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #666;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin: 2rem auto;
+  max-width: 600px;
+}
+
+.error {
+  color: #dc3545;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.titleSection h2 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.titleSection h3 {
+  margin: 0;
+  color: #666;
+  font-size: 1.3rem;
+  font-weight: 400;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.infoCard, .needsCard {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.infoCard h4, .needsCard h4 {
+  margin: 0 0 1.5rem 0;
+  color: #333;
+  font-size: 1.3rem;
+  font-weight: 600;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 0.5rem;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.infoItem {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.infoItem strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.infoItem span {
+  color: #666;
+}
+
+.infoItem a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.infoItem a:hover {
+  text-decoration: underline;
+}
+
+.available {
+  color: #28a745 !important;
+  font-weight: 600;
+}
+
+.full {
+  color: #dc3545 !important;
+  font-weight: 600;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cardHeader h4 {
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.addForm, .editForm {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 2px solid #007bff;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.formGroup input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.btnPrimary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btnPrimary:hover {
+  background-color: #0056b3;
+}
+
+.btnSecondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btnSecondary:hover {
+  background-color: #545b62;
+}
+
+.btnEdit {
+  background-color: #ffc107;
+  color: #212529;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.btnEdit:hover {
+  background-color: #e0a800;
+}
+
+.btnDelete {
+  background-color: #dc3545;
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.btnDelete:hover {
+  background-color: #c82333;
+}
+
+.needsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.emptyState {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.needItem {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  transition: box-shadow 0.3s ease;
+}
+
+.needItem:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.needContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.needInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.itemName {
+  font-weight: 600;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.itemQuantity {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.needActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .headerContent h1 a {
+    font-size: 1.5rem;
+  }
+  
+  .main {
+    padding: 1rem;
+  }
+  
+  .infoCard, .needsCard {
+    padding: 1.5rem;
+  }
+  
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+  
+  .formActions {
+    flex-direction: column;
+  }
+  
+  .needContent {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .needActions {
+    justify-content: center;
+  }
+  
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .cardHeader {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .titleSection h2 {
+    font-size: 1.5rem;
+  }
+  
+  .titleSection h3 {
+    font-size: 1.1rem;
+  }
+  
+  .infoCard, .needsCard {
+    padding: 1rem;
+  }
+}

@@ -12,7 +12,7 @@ const pool = new Pool({
   host: 'localhost',
   database: 'baita_ajuda',
   password: 'postgres',
-  port: 5432,
+  port: 5433,
 });
 
 // Test connection
@@ -27,9 +27,17 @@ pool.connect()
 app.use(cors());
 app.use(express.json());
 
-// Utility functions
+// Utility functions - CORRIGIDA para lidar com diferentes tipos de dados
 const validateFields = (data, required) => {
-  const missing = required.filter(field => !data[field]?.trim());
+  const missing = required.filter(field => {
+    const value = data[field];
+    // Se for string, verificar se não está vazia após trim
+    if (typeof value === 'string') {
+      return !value.trim();
+    }
+    // Para outros tipos (números, etc), verificar se não é null/undefined
+    return value === null || value === undefined || value === '';
+  });
   return missing.length === 0 ? null : `Missing: ${missing.join(', ')}`;
 };
 
@@ -55,7 +63,6 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
 
-    // Validate input
     const validation = validateFields(req.body, ['nome', 'email', 'senha']);
     if (validation) return badRequest(res, validation);
 
@@ -63,7 +70,6 @@ app.post('/api/auth/register', async (req, res) => {
       return badRequest(res, 'Password must be at least 6 characters');
     }
 
-    // Check existing email
     const emailExists = await pool.query(
       'SELECT id FROM Usuarios WHERE email = $1',
       [email.toLowerCase()]
@@ -73,7 +79,6 @@ app.post('/api/auth/register', async (req, res) => {
       return badRequest(res, 'Email already in use');
     }
 
-    // Create user
     const hashedPassword = await bcrypt.hash(senha, 12);
     const result = await pool.query(
       'INSERT INTO Usuarios (nome, email, senha_hash) VALUES ($1, $2, $3) RETURNING id, nome, email',
@@ -92,11 +97,9 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
 
-    // Validate input
     const validation = validateFields(req.body, ['email', 'senha']);
     if (validation) return badRequest(res, validation);
 
-    // Find user
     const result = await pool.query(
       'SELECT * FROM Usuarios WHERE email = $1',
       [email.toLowerCase().trim()]
@@ -106,7 +109,6 @@ app.post('/api/auth/login', async (req, res) => {
       return unauthorized(res);
     }
 
-    // Verify password
     const user = result.rows[0];
     const isValid = await bcrypt.compare(senha, user.senha_hash);
 
@@ -129,43 +131,47 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Criar abrigo - CORRIGIDO para validação adequada
 app.post('/api/abrigos', async (req, res) => {
   try {
-    const { nome, endereco, tipo_abrigo, vagas_disponiveis } = req.body;
+    const { nome, endereco, tipo_abrigo, vagas_disponiveis, formulario_inscricao_url, usuario_id } = req.body;
 
-    // Validate input
-    const validation = validateFields(req.body, ['nome', 'endereco']);
+    // Validar campos obrigatórios
+    const validation = validateFields(req.body, ['nome', 'endereco', 'usuario_id']);
     if (validation) return badRequest(res, validation);
 
-      // Validate shelter type
-    const validTypes = ['Pets', 'Feminino', 'Masculino'];
-    if (tipo_abrigo && (
-	!Array.isArray(tipo_abrigo) ||
-	    !tipo_abrigo.every(type => validTypes.includes(type))
-    )) {
-	return badRequest(res, `Invalid type provided. Options: ${validTypes.join(', ')}`);
+    // Verificar se o usuário existe
+    const userExists = await pool.query(
+      'SELECT id FROM Usuarios WHERE id = $1',
+      [usuario_id]
+    );
+
+    if (userExists.rows.length === 0) {
+      return badRequest(res, 'User not found');
     }
 
-    // Validate spots
     const spots = parseInt(vagas_disponiveis) || 0;
     if (spots < 0) {
       return badRequest(res, 'Spots cannot be negative');
     }
 
+    // Validar tipo_abrigo se fornecido
+    const validTypes = ['Familiar', 'Feminino', 'Masculino', 'Pets'];
+    if (tipo_abrigo && !validTypes.includes(tipo_abrigo)) {
+      return badRequest(res, 'Invalid shelter type');
+    }
 
-     const flags = {
-	 aceita_pets: tipo_abrigo.includes('Pets'),
-	 tipo_feminino: tipo_abrigo.includes('Feminino'),
-	 tipo_masculino: tipo_abrigo.includes('Masculino'),
-     };
+    // Limpar strings apenas se não forem nulas/undefined
+    const cleanNome = nome ? nome.trim() : '';
+    const cleanEndereco = endereco ? endereco.trim() : '';
+    const cleanUrl = formulario_inscricao_url ? formulario_inscricao_url.trim() : null;
 
-    // Create shelter
     const result = await pool.query(
-	'INSERT INTO Abrigos (usuario_id, nome, endereco, vagas_disponiveis, aceita_pets, tipo_feminino, tipo_masculino) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-	[1, nome.trim(), endereco.trim(), spots, flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino]
+      'INSERT INTO Abrigos (usuario_id, nome, endereco, tipo_abrigo, vagas_disponiveis, formulario_inscricao_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [usuario_id, cleanNome, cleanEndereco, tipo_abrigo || null, spots, cleanUrl]
     );
 
-    console.log('Shelter created:', result.rows[0].nome);
+    console.log('Shelter created:', result.rows[0].nome, 'for user:', usuario_id);
     res.status(201).json({ success: true, abrigo: result.rows[0] });
 
   } catch (error) {
@@ -200,6 +206,209 @@ app.get('/api/abrigos', async (req, res) => {
 
   } catch (error) {
     handleError(res, error, 'Shelters listing failed');
+  }
+});
+
+// Buscar abrigos de um usuário específico
+app.get('/api/abrigos/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const result = await pool.query(`
+      SELECT * FROM Abrigos 
+      WHERE usuario_id = $1 AND ativo = true
+      ORDER BY data_criacao DESC
+    `, [userId]);
+
+    console.log(`Found ${result.rows.length} shelters for user ${userId}`);
+    res.json({ success: true, abrigos: result.rows });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to fetch user shelters');
+  }
+});
+
+// Buscar um abrigo específico
+app.get('/api/abrigos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      'SELECT * FROM Abrigos WHERE id = $1 AND ativo = true',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
+    }
+
+    res.json({ success: true, abrigo: result.rows[0] });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to fetch shelter');
+  }
+});
+
+// Atualizar um abrigo
+app.put('/api/abrigos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, endereco, tipo_abrigo, vagas_disponiveis, formulario_inscricao_url } = req.body;
+    
+    const validation = validateFields(req.body, ['nome', 'endereco']);
+    if (validation) return badRequest(res, validation);
+
+    const spots = parseInt(vagas_disponiveis) || 0;
+    if (spots < 0) {
+      return badRequest(res, 'Spots cannot be negative');
+    }
+
+    // Validar tipo_abrigo se fornecido
+    const validTypes = ['Familiar', 'Feminino', 'Masculino', 'Pets'];
+    if (tipo_abrigo && !validTypes.includes(tipo_abrigo)) {
+      return badRequest(res, 'Invalid shelter type');
+    }
+
+    const cleanNome = nome ? nome.trim() : '';
+    const cleanEndereco = endereco ? endereco.trim() : '';
+    const cleanUrl = formulario_inscricao_url ? formulario_inscricao_url.trim() : null;
+
+    const result = await pool.query(`
+      UPDATE Abrigos 
+      SET nome = $1, endereco = $2, tipo_abrigo = $3, 
+          vagas_disponiveis = $4, formulario_inscricao_url = $5
+      WHERE id = $6 AND ativo = true
+      RETURNING *
+    `, [cleanNome, cleanEndereco, tipo_abrigo || null, spots, cleanUrl, id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
+    }
+
+    console.log('Shelter updated:', result.rows[0].nome);
+    res.json({ success: true, abrigo: result.rows[0] });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to update shelter');
+  }
+});
+
+// Deletar um abrigo (soft delete)
+app.delete('/api/abrigos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      'UPDATE Abrigos SET ativo = false WHERE id = $1 AND ativo = true RETURNING id',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
+    }
+
+    console.log('Shelter deleted:', id);
+    res.json({ success: true, message: 'Abrigo deletado com sucesso' });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to delete shelter');
+  }
+});
+
+// Buscar necessidades de um abrigo
+app.get('/api/abrigos/:id/necessidades', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      'SELECT * FROM Necessidades WHERE abrigo_id = $1 ORDER BY id DESC',
+      [id]
+    );
+
+    res.json({ success: true, necessidades: result.rows });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to fetch shelter needs');
+  }
+});
+
+// Adicionar necessidade a um abrigo
+app.post('/api/abrigos/:id/necessidades', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { item, quantidade } = req.body;
+
+    const validation = validateFields(req.body, ['item', 'quantidade']);
+    if (validation) return badRequest(res, validation);
+
+    // Verificar se o abrigo existe
+    const abrigoExists = await pool.query(
+      'SELECT id FROM Abrigos WHERE id = $1 AND ativo = true',
+      [id]
+    );
+
+    if (abrigoExists.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
+    }
+
+    const result = await pool.query(
+      'INSERT INTO Necessidades (abrigo_id, item, quantidade) VALUES ($1, $2, $3) RETURNING *',
+      [id, item.trim(), quantidade.trim()]
+    );
+
+    console.log('Need added:', result.rows[0].item, 'to shelter:', id);
+    res.status(201).json({ success: true, necessidade: result.rows[0] });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to add shelter need');
+  }
+});
+
+// Atualizar necessidade
+app.put('/api/necessidades/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { item, quantidade } = req.body;
+
+    const validation = validateFields(req.body, ['item', 'quantidade']);
+    if (validation) return badRequest(res, validation);
+
+    const result = await pool.query(
+      'UPDATE Necessidades SET item = $1, quantidade = $2 WHERE id = $3 RETURNING *',
+      [item.trim(), quantidade.trim(), id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Necessidade não encontrada' });
+    }
+
+    console.log('Need updated:', result.rows[0].item);
+    res.json({ success: true, necessidade: result.rows[0] });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to update need');
+  }
+});
+
+// Deletar necessidade
+app.delete('/api/necessidades/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      'DELETE FROM Necessidades WHERE id = $1 RETURNING id',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Necessidade não encontrada' });
+    }
+
+    console.log('Need deleted:', id);
+    res.json({ success: true, message: 'Necessidade removida com sucesso' });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to delete need');
   }
 });
 
