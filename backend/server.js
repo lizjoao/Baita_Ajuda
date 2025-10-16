@@ -12,7 +12,7 @@ const pool = new Pool({
   host: 'localhost',
   database: 'baita_ajuda',
   password: 'postgres',
-  port: 5433,
+  port: 5432,
 });
 
 // Test connection
@@ -243,9 +243,9 @@ app.get('/api/abrigos', async (req, res) => {
 app.get('/api/abrigos/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     const result = await pool.query(`
-      SELECT * FROM Abrigos 
+      SELECT * FROM Abrigos
       WHERE usuario_id = $1 AND ativo = true
       ORDER BY data_criacao DESC
     `, [userId]);
@@ -262,7 +262,7 @@ app.get('/api/abrigos/user/:userId', async (req, res) => {
 app.get('/api/abrigos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
       'SELECT * FROM Abrigos WHERE id = $1 AND ativo = true',
       [id]
@@ -284,7 +284,7 @@ app.put('/api/abrigos/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { nome, endereco, tipo_abrigo, vagas_disponiveis, formulario_inscricao_url } = req.body;
-    
+
     const validation = validateFields(req.body, ['nome', 'endereco']);
     if (validation) return badRequest(res, validation);
 
@@ -304,8 +304,8 @@ app.put('/api/abrigos/:id', async (req, res) => {
     const cleanUrl = formulario_inscricao_url ? formulario_inscricao_url.trim() : null;
 
     const result = await pool.query(`
-      UPDATE Abrigos 
-      SET nome = $1, endereco = $2, tipo_abrigo = $3, 
+      UPDATE Abrigos
+      SET nome = $1, endereco = $2, tipo_abrigo = $3,
           vagas_disponiveis = $4, formulario_inscricao_url = $5
       WHERE id = $6 AND ativo = true
       RETURNING *
@@ -327,7 +327,7 @@ app.put('/api/abrigos/:id', async (req, res) => {
 app.delete('/api/abrigos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
       'UPDATE Abrigos SET ativo = false WHERE id = $1 AND ativo = true RETURNING id',
       [id]
@@ -349,7 +349,7 @@ app.delete('/api/abrigos/:id', async (req, res) => {
 app.get('/api/abrigos/:id/necessidades', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
       'SELECT * FROM Necessidades WHERE abrigo_id = $1 ORDER BY id DESC',
       [id]
@@ -424,7 +424,7 @@ app.put('/api/necessidades/:id', async (req, res) => {
 app.delete('/api/necessidades/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
       'DELETE FROM Necessidades WHERE id = $1 RETURNING id',
       [id]
