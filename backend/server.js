@@ -193,20 +193,50 @@ app.get('/api/users', async (req, res) => {
 });
 
 app.get('/api/abrigos', async (req, res) => {
-  try {
-    const result = await pool.query(`
+    try {
+
+	const { search, min_vagas, tipo_feminino, aceita_pets, tipo_masculino } = req.query;
+
+	let baseQuery = `
       SELECT a.*, u.nome as responsavel_nome
       FROM Abrigos a
       JOIN Usuarios u ON a.usuario_id = u.id
       WHERE a.ativo = true
-      ORDER BY a.data_criacao DESC
-    `);
+    `;
 
-    res.json({ success: true, abrigos: result.rows });
+	const params = [];
+	let paramIndex = 1;
 
-  } catch (error) {
-    handleError(res, error, 'Shelters listing failed');
-  }
+	if (search) {
+	    params.push(`%${search}%`); // Add wildcards for partial matching
+	    baseQuery += ` AND (a.nome ILIKE $${paramIndex} OR a.endereco ILIKE $${paramIndex++})`; // ILIKE is case-insensitive
+	}
+	if (min_vagas) {
+	    params.push(parseInt(min_vagas));
+	    baseQuery += ` AND a.vagas_disponiveis >= $${paramIndex++}`;
+	}
+
+	if (tipo_feminino === 'true') { // Query params are strings
+	    baseQuery += ` AND a.tipo_feminino = true`;
+	}
+
+	if (tipo_masculino === 'true') { // Query params are strings
+	    baseQuery += ` AND a.tipo_feminino = true`;
+	}
+
+	if (aceita_pets === 'true') {
+	    baseQuery += ` AND a.aceita_pets = true`;
+	}
+
+	baseQuery += ' ORDER BY a.data_criacao DESC';
+
+	const result = await pool.query(baseQuery, params);
+
+	res.json({ success: true, abrigos: result.rows });
+
+    } catch (error) {
+	handleError(res, error, 'Shelters listing failed');
+    }
 });
 
 // Buscar abrigos de um usuário específico
