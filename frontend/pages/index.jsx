@@ -183,9 +183,9 @@ export default function Home() {
 			    />
 			    Aceita Pets
 			</label>
-			<button onClick={handleSortByDistance} className={styles.distanceButton}>
-			    {sortByDistance ? 'Limpar Ordenação' : 'Ordenar por Proximidade'}
-			</button>
+			{/* <button onClick={handleSortByDistance} className={styles.distanceButton}>
+			//     {sortByDistance ? 'Limpar Ordenação' : 'Ordenar por Proximidade'}
+			// </button> */}
 		    </div>
 		</div>
 
@@ -243,6 +243,7 @@ export default function Home() {
 function RenderShelter (props){
 
     return (
+	<Link key={props.shelter.id} href={`/shelters/${props.shelter.id}`} className={styles.shelterLink}>
         <div key={props.shelter.id} className={styles.shelterCard}>
 	    <h3>{props.shelter.nome}</h3>
 	    {props.shelter.distance_meters != null && (
@@ -259,6 +260,7 @@ function RenderShelter (props){
 		{props.shelter.tipo_masculino && <span className={styles.tag}>Masculino</span>}
 	    </div>
 	</div>
+	</Link>
     )
 
 }
