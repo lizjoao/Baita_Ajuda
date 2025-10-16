@@ -140,6 +140,9 @@ export default function Home() {
 		    <Link href="/add-shelter" className={styles.btn}>
 			Adicionar Abrigo
 		    </Link>
+		    <Link href="/manage-shelters" className={styles.btn}>
+			Gerenciar Abrigos
+		    </Link>
 
 		    <div className={styles.filterContainer}>
 			<input
