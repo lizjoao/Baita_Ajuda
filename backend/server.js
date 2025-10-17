@@ -504,6 +504,64 @@ app.delete('/api/necessidades/:id', async (req, res) => {
   }
 });
 
+app.post('/api/abrigos/:id/doacoes', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    const { doador_nome, doador_contato, doacoes } = req.body;
+
+    // --- Validation ---
+    if (!doador_nome || !doacoes || !Array.isArray(doacoes) || doacoes.length === 0) {
+      return res.status(400).json({ success: false, error: 'Dados de doação inválidos.' });
+    }
+
+    // Use a transaction to ensure all donations are saved together
+    await client.query('BEGIN');
+
+    for (const doacao of doacoes) {
+      const { necessidade_id, quantidade } = doacao;
+      if (!necessidade_id || !quantidade || quantidade <= 0) {
+        throw new Error('Item de doação inválido encontrado.');
+      }
+
+      await client.query(
+        `INSERT INTO Doacoes (abrigo_id, necessidade_id, quantidade_doada, doador_nome, doador_contato)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, necessidade_id, quantidade, doador_nome, doador_contato]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json({ success: true, message: 'Doação registrada com sucesso!' });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    handleError(res, error, 'Failed to register donation');
+  } finally {
+    client.release();
+  }
+});
+
+// GET donations for a specific shelter
+app.get('/api/abrigos/:id/doacoes', async (req, res) => {
+    try {
+	const { id } = req.params;
+
+	const result = await pool.query(
+	    `SELECT d.id, d.doador_nome, d.quantidade_doada, d.data_doacao, n.item AS item_nome
+       FROM Doacoes d
+       JOIN Necessidades n ON d.necessidade_id = n.id
+       WHERE d.abrigo_id = $1
+       ORDER BY d.data_doacao DESC`,
+	    [id]
+	);
+
+	res.json({ success: true, doacoes: result.rows });
+    } catch (error) {
+	handleError(res, error, 'Failed to fetch shelter donations');
+    }
+});
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({

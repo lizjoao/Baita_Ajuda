@@ -48,3 +48,17 @@ CREATE TABLE Avaliacoes (
     data_avaliacao TIMESTAMPTZ DEFAULT NOW(),
     FOREIGN KEY (abrigo_id) REFERENCES Abrigos(id) ON DELETE CASCADE
 );
+
+
+CREATE TABLE Doacoes (
+    id SERIAL PRIMARY KEY,
+    abrigo_id INT NOT NULL,
+    necessidade_id INT NOT NULL, -- Links to the specific item needed
+    quantidade_doada INT NOT NULL,
+    doador_nome VARCHAR(255) NOT NULL,
+    doador_contato VARCHAR(255), -- Optional, for email or phone
+    data_doacao TIMESTAMPTZ DEFAULT NOW(),
+    status VARCHAR(50) DEFAULT 'Pendente', -- For future use (e.g., 'Entregue')
+    FOREIGN KEY (abrigo_id) REFERENCES Abrigos(id) ON DELETE CASCADE,
+    FOREIGN KEY (necessidade_id) REFERENCES Necessidades(id) ON DELETE CASCADE
+);
