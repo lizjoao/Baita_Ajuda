@@ -5,37 +5,39 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import styles from '../../styles/ShelterDetailsUser.module.css'; // We will create this CSS file
-
 export default function ShelterDetail() {
   const router = useRouter();
-  const { id } = router.query; // Get the 'id' from the URL
+  const { id } = router.query;
 
   const [shelter, setShelter] = useState(null);
   const [needs, setNeeds] = useState([]);
+  const [reviews, setReviews] = useState([]); // ✨ Add state for reviews
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Only fetch data when the router has the id parameter ready
     if (!id) return;
 
     async function fetchData() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch both the shelter details and its needs at the same time
-        const [shelterRes, needsRes] = await Promise.all([
+
+          const [shelterRes, needsRes, reviewsRes] = await Promise.all([
           fetch(`http://localhost:5000/api/abrigos/${id}`),
-          fetch(`http://localhost:5000/api/abrigos/${id}/necessidades`)
+          fetch(`http://localhost:5000/api/abrigos/${id}/necessidades`),
+          fetch(`http://localhost:5000/api/abrigos/${id}/avaliacoes`)
         ]);
 
         if (!shelterRes.ok) throw new Error('Abrigo não encontrado');
 
         const shelterData = await shelterRes.json();
         const needsData = await needsRes.json();
+        const reviewsData = await reviewsRes.json();
 
         setShelter(shelterData.abrigo);
         setNeeds(needsData.necessidades);
+        setReviews(reviewsData.avaliacoes);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -44,11 +46,17 @@ export default function ShelterDetail() {
     }
 
     fetchData();
-  }, [id]); // Re-run this effect if the id changes
+  }, [id]);
+
+
+    const renderStars = (rating) => {
+	return '⭐'.repeat(rating);
+    };
 
   if (loading) return <div className={styles.centerStatus}>Carregando...</div>;
   if (error) return <div className={styles.centerStatus}>Erro: {error}</div>;
   if (!shelter) return <div className={styles.centerStatus}>Abrigo não encontrado.</div>;
+
 
 return (
   <div className={styles.container}>
@@ -100,6 +108,27 @@ return (
           <p>No momento, não há necessidades específicas cadastradas.</p>
         )}
       </div>
+
+	<div className={styles.card}>
+            <h2>Avaliações</h2>
+            {reviews.length > 0 ? (
+		<div className={styles.reviewsList}>
+		    {reviews.map(review => (
+			<div key={review.id} className={styles.reviewItem}>
+			    <div className={styles.reviewHeader}>
+				<span className={styles.reviewRating}>{renderStars(review.nota)}</span>
+				<span className={styles.reviewDate}>
+				    {new Date(review.data_avaliacao).toLocaleDateString('pt-BR')}
+				</span>
+			    </div>
+			    <p className={styles.reviewComment}>{review.comentario}</p>
+			</div>
+		    ))}
+		</div>
+            ) : (
+		<p>Este abrigo ainda não possui avaliações.</p>
+            )}
+        </div>
     </main>
   </div>
 );

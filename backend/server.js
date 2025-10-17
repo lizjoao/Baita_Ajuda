@@ -324,6 +324,23 @@ app.get('/api/abrigos/:id', async (req, res) => {
   }
 });
 
+// GET reviews for a specific shelter
+app.get('/api/abrigos/:id/avaliacoes', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      'SELECT * FROM Avaliacoes WHERE abrigo_id = $1 ORDER BY data_avaliacao DESC',
+      [id]
+    );
+
+    res.json({ success: true, avaliacoes: result.rows });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to fetch shelter reviews');
+  }
+});
+
 // Atualizar um abrigo
 app.put('/api/abrigos/:id', async (req, res) => {
   try {

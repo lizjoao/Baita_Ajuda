@@ -122,3 +122,59 @@
   height: 100vh;
   font-size: 1.5rem;
 }
+
+/* Add these styles to styles/ShelterDetail.module.css */
+
+/* --- Highlighted Tags --- */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.tag {
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+.tagPets { background-color: #28a745; } /* Green */
+.tagFeminino { background-color: #dc3545; } /* Red */
+.tagMasculino { background-color: #007bff; } /* Blue */
+
+/* --- Average Rating --- */
+.averageRating {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* --- Reviews Card --- */
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+.reviewItem {
+  border: 1px solid #eee;
+  padding: 1rem;
+  border-radius: 5px;
+}
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.reviewRating {
+  font-size: 1.1rem;
+}
+.reviewDate {
+  font-size: 0.8rem;
+  color: #666;
+}
+.reviewComment {
+  margin: 0;
+  line-height: 1.6;
+  color: #333;
+}
