@@ -1,100 +1,82 @@
-# Baita Ajuda
+# 🏠 Baita Ajuda
 
-![Status do Projeto](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
+Sistema de localização e gerenciamento de abrigos para pessoas em situação de emergência.
 
-## 📖 Sobre o Projeto
+![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat-square&logo=next.js)
+![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=flat-square&logo=node.js)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue?style=flat-square&logo=postgresql)
 
-O **Baita Ajuda** é um projeto acadêmico desenvolvido para a disciplina de **INF1060** do curso de **Ciência da Computação** da **UFRGS**.
+## 🎯 Funcionalidades
 
-Trata-se de uma plataforma web criada para centralizar e facilitar o acesso a informações sobre abrigos durante situações de calamidade em Porto Alegre e região. O objetivo é conectar pessoas que precisam de ajuda a abrigos seguros, além de organizar as necessidades de cada local para direcionar doações de forma eficiente.
+- 🗺️ Mapa interativo com abrigos disponíveis
+- 🔍 Busca e filtros (tipo, localização, vagas)
+- 📍 Ordenação por proximidade (geolocalização)
+- ✏️ Sistema de gerenciamento de abrigos
+- 🔐 Autenticação de usuários
 
----
+## 🛠️ Tecnologias
 
-## ✨ Funcionalidades
+**Frontend:** Next.js 14, React 18, Leaflet, CSS Modules  
+**Backend:** Node.js, Express, PostgreSQL, bcrypt
 
-- 👤 **Gestão de Contas:** Usuários podem se cadastrar para administrar um ou mais abrigos.
-- 🔐 **Autenticação Segura:** Senhas são protegidas com hashing **Bcrypt**, garantindo a segurança dos dados.
-- 🏠 **Cadastro Detalhado de Abrigos:** Informações completas como nome, endereço, tipo de abrigo (Familiar, Feminino, Masculino, Pets), e vagas disponíveis.
-- 🗺️ **Busca por Proximidade:** Utilizando PostGIS, usuários podem encontrar os abrigos mais próximos de sua localização.
-- 🔍 **Filtros Avançados:** Pesquise abrigos por nome, vagas disponíveis ou por itens de necessidade específicos.
-- 📋 **Lista de Necessidades:** Cada abrigo pode manter uma lista atualizada de itens que precisa, otimizando o recebimento de doações.
-- ⭐ **Sistema de Avaliação:** Um sistema de notas permite a moderação e a garantia da qualidade dos locais listados.
+## 📦 Pré-requisitos
 
----
+- Node.js 18+
+- PostgreSQL 15+
+- npm ou yarn
 
-## 🛠️ Tecnologias Utilizadas
+## 🚀 Instalação
 
-- **Backend**:
+### 1. Clone e configure o banco
 
-  - **Node.js** com **Express.js** para a API RESTful.
-  - **PostgreSQL** como banco de dados relacional.
-  - **PostGIS** para funcionalidades geoespaciais.
-  - **Bcrypt.js** para hashing e segurança de senhas.
-  - **pg (node-postgres)** como driver de conexão com o banco de dados.
-- **Frontend**:
+```bash
+git clone https://github.com/seu-usuario/Baita_Ajuda.git
+cd Baita_Ajuda
 
-  - _(A definir - Sugestão: **React.js** com **Vite**)._
-  - _(Sugestão: **Leaflet** ou **Mapbox** para os mapas)._
-- **Ambiente de Desenvolvimento**:
+# PostgreSQL
+psql -U postgres
+CREATE DATABASE baita_ajuda;
+\q
 
-  - **Docker** e **Docker Compose** para criar um ambiente de desenvolvimento padronizado.
+psql -U postgres -d baita_ajuda -f backend/init-db.sql
+```
 
----
+### 2. Instale dependências
 
-## 🚀 Como Executar o Projeto
+```bash
+# Backend
+cd backend
+npm install
 
-Siga os passos abaixo para configurar и rodar a aplicação localmente para avaliação.
+# Frontend
+cd ../frontend
+npm install
+```
 
-### Pré-requisitos
+### 3. Configure variáveis de ambiente
 
-- [Git](https://git-scm.com/)
-- [Node.js](https://nodejs.org/en/) (versão 18 ou superior)
-- PostgreSQL
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+Crie `backend/.env`:
 
-### Passos
+```env
+DB_USER=postgres
+DB_HOST=localhost
+DB_NAME=baita_ajuda
+DB_PASSWORD=sua_senha
+DB_PORT=5432
+PORT=5000
+```
 
-1. **Clone o repositório:**
+## 🎮 Executar
 
-   ```bash
-   git clone [https://github.com/seu-usuario/baita-ajuda.git](https://github.com/seu-usuario/baita-ajuda.git)
-   cd baita-ajuda
-   ```
-2. **Conectar ao PostgreSQL:**
+```bash
+# Backend (terminal 1)
+cd backend
+node server.js
 
-   - Navegue até a pasta `backend`..
-   - ```bash
-     psql -U postgres -h localhost -p 5432
-     ```
-3. **Crie o banco de dados:**
+# Frontend (terminal 2)
+cd frontend
+npm run dev
+```
 
-   - Na pasta backend:
-     ```bash
-     CREATE DATABASE baita_ajuda;
-     ```
-4. **Crie a Estrutura do Banco de Dados:**
+Acesse: `http://localhost:3000`
 
-   - Execute os scripts SQL para criar as tabelas e popular com dados de teste.
-   - **Schema:**
-     ```bash
-     \c baita_ajuda;
-     \i C:/Users/BibiB/Documents/GitHub/Baita_Ajuda/database/schema.sql
-     ```
-   - **Dados Iniciais (Seeds):**
-     ```bash
-     docker exec -i abrigos_db psql -U docker -d abrigos < database/seeds/001_initial_data.sql
-     ```
-5. **Inicie o Servidor Backend:**
-
-   ```bash
-   cd backend
-   npm install
-   npm run dev
-   ```
-6. **Inicie a Aplicação Frontend:**
-
-   ```bash
-   cd ../frontend
-   npm install
-   npm run dev
-   ```

@@ -1,201 +1,104 @@
-import { useState } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import styles from '../styles/Login.module.css';
+import { useState } from 'react'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
+import Head from 'next/head'
+import Header from '../components/Header'
+import styles from '../styles/Auth.module.css'
+
+export const useAuth = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
+
+  const login = async (email, senha) => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha })
+      })
+      const data = await res.json()
+      if (data.success) {
+        localStorage.setItem('user', JSON.stringify(data.user))
+        router.push('/manage-shelters')
+      } else {
+        setError(data.error || 'Erro ao fazer login')
+      }
+    } catch {
+      setError('Erro ao conectar')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { loading, error, login }
+}
 
 export default function Login() {
-  const [formData, setFormData] = useState({
-    email: '',
-    senha: ''
-  });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState('');
-  const router = useRouter();
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
+  const { loading, error, login } = useAuth()
+  const router = useRouter()
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Limpar erros quando usuário digitar
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-    if (apiError) {
-      setApiError('');
-    }
-  };
-
-
-  
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
-    }
-
-    if (!formData.senha) {
-      newErrors.senha = 'Senha é obrigatória';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
-    setApiError('');
-
-    try {
-      console.log('Login attempt for:', formData.email);
-
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email.trim(),
-          senha: formData.senha
-        }),
-      });
-
-      const data = await response.json();
-      console.log('Login response:', data);
-
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Erro desconhecido');
-      }
-
-      // Salva os dados do usuário no localStorage
-      localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('isLoggedIn', 'true');
-
-      console.log('Login successful for:', data.user.email);
-      
-      // Redireciona para página inicial
-      router.push('/');
-
-    } catch (error) {
-      console.error('Login error:', error.message);
-      setApiError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    login(email, senha)
+  }
 
   return (
     <div className={styles.container}>
       <Head>
         <title>Login - Baita Ajuda</title>
-        <meta name="description" content="Faça login no Baita Ajuda" />
       </Head>
-      
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <h1>
-            <Link href="/">Baita Ajuda</Link>
-          </h1>
-        </div>
-      </header>
+
+      <Header />
 
       <main className={styles.main}>
-        <div className={styles.loginContainer}>
-          <form onSubmit={handleSubmit} className={styles.loginForm}>
-            <h2>Entrar na Conta</h2>
-            
-            {/* Erro da API */}
-            {apiError && (
-              <div className={styles.errorBanner}>
-                {apiError}
-              </div>
-            )}
+        <div className={styles.card}>
+          <h1 className={styles.title}>Bem-vindo de volta!</h1>
+          <p className={styles.subtitle}>Entre para gerenciar seus abrigos</p>
 
-            {/* Campo Email */}
+          {error && <div className={styles.error}>{error}</div>}
+
+          <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.formGroup}>
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email" className={styles.label}>E-mail</label>
               <input
-                type="email"
                 id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={errors.email ? styles.inputError : ''}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className={styles.input}
                 placeholder="seu@email.com"
-                required
-                autoComplete="email"
               />
-              {errors.email && (
-                <span className={styles.errorMsg}>{errors.email}</span>
-              )}
             </div>
 
-            {/* Campo Senha */}
             <div className={styles.formGroup}>
-              <label htmlFor="senha">Senha</label>
+              <label htmlFor="senha" className={styles.label}>Senha</label>
               <input
-                type="password"
                 id="senha"
-                name="senha"
-                value={formData.senha}
-                onChange={handleChange}
-                className={errors.senha ? styles.inputError : ''}
-                placeholder="Sua senha"
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
                 required
-                autoComplete="current-password"
+                className={styles.input}
+                placeholder="••••••••"
               />
-              {errors.senha && (
-                <span className={styles.errorMsg}>{errors.senha}</span>
-              )}
             </div>
 
-            {/* Botão Submit */}
-            <button 
-              type="submit" 
-              className={`${styles.btn} ${styles.btnPrimary}`}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span className={styles.spinner}></span>
-                  Entrando...
-                </>
-              ) : (
-                'Entrar'
-              )}
+            <button type="submit" disabled={loading} className={styles.button}>
+              {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
 
-          {/* Links */}
-          <div className={styles.loginLinks}>
-            <p>
-              Não tem uma conta?{' '}
-              <Link href="/register">
-                Registre-se aqui
-              </Link>
-            </p>
-            <p>
-              <Link href="/">
-                Voltar ao início
-              </Link>
-            </p>
-          </div>
+          <p className={styles.link}>
+            Não tem uma conta? <Link href="/register">Registre-se aqui</Link>
+          </p>
         </div>
       </main>
     </div>
-  );
+  )
 }

@@ -1,0 +1,14 @@
+{
+  "components\\Map.jsx -> leaflet": {
+    "id": "components\\Map.jsx -> leaflet",
+    "files": [
+      "static/chunks/node_modules_leaflet_dist_leaflet-src_js.js"
+    ]
+  },
+  "pages\\index.jsx -> ../components/Map": {
+    "id": "pages\\index.jsx -> ../components/Map",
+    "files": [
+      "static/chunks/components_Map_jsx.js"
+    ]
+  }
+}

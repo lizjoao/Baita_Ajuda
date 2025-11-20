@@ -1,160 +1,139 @@
-import { useState } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import apiService from '../services/api';
-import styles from '../styles/Register.module.css';
+import { useState } from 'react'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
+import Head from 'next/head'
+import Header from '../components/Header'
+import styles from '../styles/Auth.module.css'
 
 export default function Register() {
-  const [formData, setFormData] = useState({
-    nome: '',
-    email: '',
-    senha: '',
-    confirmarSenha: ''
-  });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-  };
+  const [nome, setNome] = useState('')
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
+  const [confirmarSenha, setConfirmarSenha] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.nome.trim()) {
-      newErrors.nome = 'Nome é obrigatório';
-    } else if (formData.nome.trim().length < 2) {
-      newErrors.nome = 'Nome deve ter pelo menos 2 caracteres';
+    if (senha !== confirmarSenha) {
+      setError('As senhas não coincidem')
+      return false
     }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
+    if (senha.length < 6) {
+      setError('Senha muito curta')
+      return false
     }
-
-    if (!formData.senha) {
-      newErrors.senha = 'Senha é obrigatória';
-    } else if (formData.senha.length < 6) {
-      newErrors.senha = 'Senha deve ter pelo menos 6 caracteres';
-    }
-
-    if (formData.senha !== formData.confirmarSenha) {
-      newErrors.confirmarSenha = 'Senhas não coincidem';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    return true
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
+    if (!validateForm()) return
+    setError('')
 
-    if (!validateForm()) {
-      return;
-    }
+    setLoading(true)
 
-    setLoading(true);
     try {
-      console.log('Registering user:', formData.email);
-      
-      const result = await apiService.register({
-        nome: formData.nome,
-        email: formData.email,
-        senha: formData.senha
-      });
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, email, senha }),
+      })
 
-      console.log('Registration successful:', result.user);
-      alert('Conta criada com sucesso!');
-      router.push('/login');
+      const data = await response.json()
 
-    } catch (error) {
-      console.error('Registration error:', error.message);
-      alert(`Erro: ${error.message}`);
+      if (data.success) {
+        localStorage.setItem('user', JSON.stringify(data.user))
+        router.push('/manage-shelters')
+      } else {
+        setError(data.error || 'Erro ao criar conta')
+      }
+    } catch (err) {
+      setError('Erro ao conectar com o servidor')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className={styles.container}>
       <Head>
-        <title>Registro - Baita Ajuda</title>
+        <title>Registrar - Baita Ajuda</title>
       </Head>
-      
-      <header className={styles.header}>
-        <h1><Link href="/">Baita Ajuda</Link></h1>
-      </header>
+
+      <Header />
 
       <main className={styles.main}>
         <div className={styles.card}>
-          <h2>Criar Conta</h2>
-          
-          <form onSubmit={handleSubmit}>
-            <div className={styles.field}>
-              <label>Nome</label>
+          <h1 className={styles.title}>Criar conta</h1>
+          <p className={styles.subtitle}>Junte-se a nós e ajude a comunidade</p>
+
+          {error && <div className={styles.error}>{error}</div>}
+
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.formGroup}>
+              <label htmlFor="nome" className={styles.label}>Nome completo</label>
               <input
+                id="nome"
                 type="text"
-                name="nome"
-                value={formData.nome}
-                onChange={handleChange}
-                className={errors.nome ? styles.error : ''}
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
                 required
+                className={styles.input}
+                placeholder="Seu nome"
               />
-              {errors.nome && <span className={styles.errorMsg}>{errors.nome}</span>}
             </div>
 
-            <div className={styles.field}>
-              <label>Email</label>
+            <div className={styles.formGroup}>
+              <label htmlFor="email" className={styles.label}>E-mail</label>
               <input
+                id="email"
                 type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={errors.email ? styles.error : ''}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
+                className={styles.input}
+                placeholder="seu@email.com"
               />
-              {errors.email && <span className={styles.errorMsg}>{errors.email}</span>}
             </div>
 
-            <div className={styles.field}>
-              <label>Senha</label>
+            <div className={styles.formGroup}>
+              <label htmlFor="senha" className={styles.label}>Senha</label>
               <input
+                id="senha"
                 type="password"
-                name="senha"
-                value={formData.senha}
-                onChange={handleChange}
-                className={errors.senha ? styles.error : ''}
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
                 required
+                minLength={6}
+                className={styles.input}
+                placeholder="Mínimo 6 caracteres"
               />
-              {errors.senha && <span className={styles.errorMsg}>{errors.senha}</span>}
             </div>
 
-            <div className={styles.field}>
-              <label>Confirmar Senha</label>
+            <div className={styles.formGroup}>
+              <label htmlFor="confirmarSenha" className={styles.label}>Confirmar senha</label>
               <input
+                id="confirmarSenha"
                 type="password"
-                name="confirmarSenha"
-                value={formData.confirmarSenha}
-                onChange={handleChange}
-                className={errors.confirmarSenha ? styles.error : ''}
+                value={confirmarSenha}
+                onChange={(e) => setConfirmarSenha(e.target.value)}
                 required
+                className={styles.input}
+                placeholder="Digite a senha novamente"
               />
-              {errors.confirmarSenha && <span className={styles.errorMsg}>{errors.confirmarSenha}</span>}
             </div>
 
-            <button type="submit" className={styles.btn} disabled={loading}>
-              {loading ? 'Criando...' : 'Criar Conta'}
+            <button type="submit" disabled={loading} className={styles.button}>
+              {loading ? 'Criando conta...' : 'Criar conta'}
             </button>
           </form>
 
-          <p>Já tem conta? <Link href="/login">Faça login</Link></p>
+          <p className={styles.link}>
+            Já tem uma conta? <Link href="/login">Entre aqui</Link>
+          </p>
         </div>
       </main>
     </div>
-  );
+  )
 }

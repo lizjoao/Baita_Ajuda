@@ -1,41 +1,31 @@
+require('dotenv').config(); // ← Adicionar no topo
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
 const { Pool } = require('pg');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
-// Database configuration
+// Database configuration - USAR VARIÁVEIS DE AMBIENTE
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'baita_ajuda',
-  password: 'postgres',
-  port: 5432,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT
 });
-
-// Test connection
-pool.connect()
-  .then(() => console.log('Database connected'))
-  .catch(err => {
-    console.error('Database error:', err.message);
-    process.exit(1);
-  });
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Utility functions - CORRIGIDA para lidar com diferentes tipos de dados
+// Utility functions
 const validateFields = (data, required) => {
   const missing = required.filter(field => {
     const value = data[field];
-    // Se for string, verificar se não está vazia após trim
     if (typeof value === 'string') {
       return !value.trim();
     }
-    // Para outros tipos (números, etc), verificar se não é null/undefined
     return value === null || value === undefined || value === '';
   });
   return missing.length === 0 ? null : `Missing: ${missing.join(', ')}`;
@@ -55,10 +45,6 @@ const unauthorized = (res, message = 'Invalid credentials') => {
 };
 
 // Routes
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend running' });
-});
-
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
@@ -131,10 +117,13 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Criar abrigo - CORRIGIDO para validação adequada
+// Criar abrigo - CORRIGIDO
 app.post('/api/abrigos', async (req, res) => {
   try {
     const { nome, endereco, tipo_abrigo, vagas_disponiveis, formulario_inscricao_url, usuario_id } = req.body;
+
+    console.log('=== CRIAR ABRIGO ===');
+    console.log('Dados recebidos:', req.body);
 
     // Validar campos obrigatórios
     const validation = validateFields(req.body, ['nome', 'endereco', 'usuario_id']);
@@ -155,133 +144,152 @@ app.post('/api/abrigos', async (req, res) => {
       return badRequest(res, 'Spots cannot be negative');
     }
 
-      // Validar tipo_abrigo se fornecido
+    // Processar tipo_abrigo - CORRIGIDO
+    const flags = {
+      tipo_feminino: false,
+      aceita_pets: false,
+      tipo_masculino: false,
+    };
+
+    if (tipo_abrigo && Array.isArray(tipo_abrigo)) {
       const validTypes = ['Pets', 'Feminino', 'Masculino'];
-      if (tipo_abrigo && (
-	  !Array.isArray(tipo_abrigo) ||
-	      !tipo_abrigo.every(type => validTypes.includes(type))
-      )) {
-	  return badRequest(res, `Invalid type provided. Options: ${validTypes.join(', ')}`);
+      
+      // Validar tipos
+      const invalidTypes = tipo_abrigo.filter(type => !validTypes.includes(type));
+      if (invalidTypes.length > 0) {
+        return badRequest(res, `Invalid type provided: ${invalidTypes.join(', ')}`);
       }
 
-      const flags = {
-	  tipo_feminino: tipo_abrigo.includes('Feminino'),
-	  aceita_pets: tipo_abrigo.includes('Pets'),
-	  tipo_masculino: tipo_abrigo.includes('Masculino'),
-      };
+      flags.tipo_feminino = tipo_abrigo.includes('Feminino');
+      flags.aceita_pets = tipo_abrigo.includes('Pets');
+      flags.tipo_masculino = tipo_abrigo.includes('Masculino');
+    }
 
-      console.log(tipo_abrigo)
-      console.log(flags)
-    // Limpar strings apenas se não forem nulas/undefined
-    const cleanNome = nome ? nome.trim() : '';
-    const cleanEndereco = endereco ? endereco.trim() : '';
+    console.log('Flags processados:', flags);
+
+    const cleanNome = nome.trim();
+    const cleanEndereco = endereco.trim();
     const cleanUrl = formulario_inscricao_url ? formulario_inscricao_url.trim() : null;
 
     const result = await pool.query(
-	'INSERT INTO Abrigos (usuario_id, nome, endereco, aceita_pets, tipo_feminino, tipo_masculino, vagas_disponiveis, formulario_inscricao_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-	[usuario_id, cleanNome, cleanEndereco, flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino, spots, cleanUrl]
+      `INSERT INTO Abrigos (usuario_id, nome, endereco, aceita_pets, tipo_feminino, tipo_masculino, vagas_disponiveis, formulario_inscricao_url, ativo) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true) RETURNING *`,
+      [usuario_id, cleanNome, cleanEndereco, flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino, spots, cleanUrl]
     );
 
-    console.log('Shelter created:', result.rows[0].nome, 'for user:', usuario_id);
+    console.log('Shelter created:', result.rows[0]);
     res.status(201).json({ success: true, abrigo: result.rows[0] });
 
   } catch (error) {
+    console.error('=== ERRO AO CRIAR ABRIGO ===');
+    console.error(error);
     handleError(res, error, 'Shelter creation failed');
   }
 });
 
-app.get('/api/users', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT id, nome, email, data_criacao FROM Usuarios ORDER BY data_criacao DESC'
-    );
-
-    res.json({ success: true, users: result.rows });
-
-  } catch (error) {
-    handleError(res, error, 'Users listing failed');
-  }
-});
-
+// Listar abrigos - CORRIGIDO
 app.get('/api/abrigos', async (req, res) => {
-    try {
+  try {
+    console.log('=== BUSCAR ABRIGOS ===');
+    console.log('Query params:', req.query);
 
-	const { search, min_vagas, tipo_feminino, aceita_pets, tipo_masculino, lat, lng } = req.query;
-	const page = parseInt(req.query.page || '1');
-	const limit = parseInt(req.query.limit || '10');
-	const offset = (page - 1) * limit;
+    const { search, min_vagas, tipo_feminino, aceita_pets, tipo_masculino, lat, lng } = req.query;
+    const page = parseInt(req.query.page || '1');
+    const limit = parseInt(req.query.limit || '10');
+    const offset = (page - 1) * limit;
 
-	let selectClause = 'SELECT a.*, u.nome as responsavel_nome';
-	if (lat && lng) {
-	    // ST_Distance returns distance in meters
-	    selectClause += `, ST_Distance(a.localizacao, ST_MakePoint(${lng}, ${lat})::geography) as distance_meters`;
-	}
+    let selectClause = 'SELECT a.*, u.nome as responsavel_nome';
+    if (lat && lng) {
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      
+      if (!isNaN(latitude) && !isNaN(longitude)) {
+        selectClause += `, 
+          (6371 * acos(
+            cos(radians(${latitude})) * 
+            cos(radians(COALESCE(a.latitude, -30.0346))) * 
+            cos(radians(COALESCE(a.longitude, -51.2177)) - radians(${longitude})) + 
+            sin(radians(${latitude})) * 
+            sin(radians(COALESCE(a.latitude, -30.0346)))
+          )) * 1000 as distance_meters`;
+      }
+    }
 
-	let whereClause = `
-      WHERE a.ativo = true
-    `;
+    let whereClause = 'WHERE a.ativo = true';
+    const params = [];
+    let paramIndex = 1;
 
-	const params = [];
-	let paramIndex = 1;
+    if (search) {
+      params.push(`%${search}%`);
+      whereClause += ` AND (a.nome ILIKE $${paramIndex} OR a.endereco ILIKE $${paramIndex})`;
+      paramIndex++;
+    }
 
-	if (search) {
-	    params.push(`%${search}%`); // Add wildcards for partial matching
-	    whereClause += ` AND (a.nome ILIKE $${paramIndex} OR a.endereco ILIKE $${paramIndex++})`; // ILIKE is case-insensitive
-	}
-	if (min_vagas) {
-	    params.push(parseInt(min_vagas));
-	    whereClause += ` AND a.vagas_disponiveis >= $${paramIndex++}`;
-	}
+    if (min_vagas) {
+      params.push(parseInt(min_vagas));
+      whereClause += ` AND a.vagas_disponiveis >= $${paramIndex}`;
+      paramIndex++;
+    }
 
-	if (tipo_feminino === 'true') { // Query params are strings
-	    whereClause += ` AND a.tipo_feminino = true`;
-	}
+    if (tipo_feminino === 'true') {
+      whereClause += ` AND a.tipo_feminino = true`;
+    }
 
-	if (tipo_masculino === 'true') { // Query params are strings
-	    whereClause += ` AND a.tipo_feminino = true`;
-	}
+    if (tipo_masculino === 'true') {
+      whereClause += ` AND a.tipo_masculino = true`;
+    }
 
-	if (aceita_pets === 'true') {
-	    whereClause += ` AND a.aceita_pets = true`;
-	}
+    if (aceita_pets === 'true') {
+      whereClause += ` AND a.aceita_pets = true`;
+    }
 
-	const countQuery = `SELECT COUNT(*) FROM Abrigos a ${whereClause}`;
-	const totalResult = await pool.query(countQuery, params);
-	const totalShelters = parseInt(totalResult.rows[0].count);
-	const totalPages = Math.ceil(totalShelters / limit);
+    // Contar total
+    const countQuery = `SELECT COUNT(*) FROM Abrigos a ${whereClause}`;
+    const totalResult = await pool.query(countQuery, params);
+    const totalShelters = parseInt(totalResult.rows[0].count);
+    const totalPages = Math.ceil(totalShelters / limit);
 
-	let orderByClause = 'ORDER BY a.media_avaliacoes DESC';
-	if (lat && lng) {
-	    // Order by the calculated distance, ascending
-	    orderByClause = 'ORDER BY distance_meters ASC';
-	}
+    // Ordenação
+    let orderByClause = 'ORDER BY a.created_at DESC';
+    if (lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+      orderByClause = 'ORDER BY distance_meters ASC';
+    }
 
-	const resultsQuery = `
+    // Query principal
+    const resultsQuery = `
       ${selectClause}
       FROM Abrigos a
-      JOIN Usuarios u ON a.usuario_id = u.id
+      LEFT JOIN Usuarios u ON a.usuario_id = u.id
       ${whereClause}
       ${orderByClause}
-      LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
-	const result = await pool.query(resultsQuery, [...params, limit, offset]);
-//	const result = await pool.query(baseQuery, params);
 
-	//	res.json({ success: true, abrigos: result.rows });
-	res.json({
-	    success: true,
-	    abrigos: result.rows,
-	    pagination: {
-		currentPage: page,
-		totalPages: totalPages,
-		totalShelters: totalShelters,
-		limit: limit
-	    }
-	});
+    params.push(limit, offset);
 
-    } catch (error) {
-	handleError(res, error, 'Shelters listing failed');
-    }
+    console.log('Query SQL:', resultsQuery);
+    console.log('Params:', params);
+
+    const result = await pool.query(resultsQuery, params);
+
+    console.log(`Encontrados ${result.rows.length} abrigos`);
+
+    res.json({
+      success: true,
+      abrigos: result.rows,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalShelters: totalShelters,
+        limit: limit
+      }
+    });
+
+  } catch (error) {
+    console.error('=== ERRO AO BUSCAR ABRIGOS ===');
+    console.error(error);
+    handleError(res, error, 'Shelters listing failed');
+  }
 });
 
 // Buscar abrigos de um usuário específico
@@ -292,7 +300,7 @@ app.get('/api/abrigos/user/:userId', async (req, res) => {
     const result = await pool.query(`
       SELECT * FROM Abrigos
       WHERE usuario_id = $1 AND ativo = true
-      ORDER BY data_criacao DESC
+      ORDER BY created_at DESC
     `, [userId]);
 
     console.log(`Found ${result.rows.length} shelters for user ${userId}`);
@@ -355,23 +363,16 @@ app.put('/api/abrigos/:id', async (req, res) => {
       return badRequest(res, 'Spots cannot be negative');
     }
 
-    // Validar tipo_abrigo se fornecido
-    const validTypes = ['Familiar', 'Feminino', 'Masculino', 'Pets'];
-    if (tipo_abrigo && !validTypes.includes(tipo_abrigo)) {
-      return badRequest(res, 'Invalid shelter type');
-    }
-
-    const cleanNome = nome ? nome.trim() : '';
-    const cleanEndereco = endereco ? endereco.trim() : '';
+    const cleanNome = nome.trim();
+    const cleanEndereco = endereco.trim();
     const cleanUrl = formulario_inscricao_url ? formulario_inscricao_url.trim() : null;
 
     const result = await pool.query(`
       UPDATE Abrigos
-      SET nome = $1, endereco = $2, tipo_abrigo = $3,
-          vagas_disponiveis = $4, formulario_inscricao_url = $5
-      WHERE id = $6 AND ativo = true
+      SET nome = $1, endereco = $2, vagas_disponiveis = $3, formulario_inscricao_url = $4, updated_at = NOW()
+      WHERE id = $5 AND ativo = true
       RETURNING *
-    `, [cleanNome, cleanEndereco, tipo_abrigo || null, spots, cleanUrl, id]);
+    `, [cleanNome, cleanEndereco, spots, cleanUrl, id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
@@ -413,7 +414,7 @@ app.get('/api/abrigos/:id/necessidades', async (req, res) => {
     const { id } = req.params;
 
     const result = await pool.query(
-      'SELECT * FROM Necessidades WHERE abrigo_id = $1 ORDER BY id DESC',
+      'SELECT * FROM Necessidades WHERE abrigo_id = $1 ORDER BY created_at DESC',
       [id]
     );
 
@@ -428,12 +429,11 @@ app.get('/api/abrigos/:id/necessidades', async (req, res) => {
 app.post('/api/abrigos/:id/necessidades', async (req, res) => {
   try {
     const { id } = req.params;
-    const { item, quantidade } = req.body;
+    const { item, quantidade, urgencia } = req.body;
 
     const validation = validateFields(req.body, ['item', 'quantidade']);
     if (validation) return badRequest(res, validation);
 
-    // Verificar se o abrigo existe
     const abrigoExists = await pool.query(
       'SELECT id FROM Abrigos WHERE id = $1 AND ativo = true',
       [id]
@@ -444,11 +444,11 @@ app.post('/api/abrigos/:id/necessidades', async (req, res) => {
     }
 
     const result = await pool.query(
-      'INSERT INTO Necessidades (abrigo_id, item, quantidade) VALUES ($1, $2, $3) RETURNING *',
-      [id, item.trim(), quantidade.trim()]
+      'INSERT INTO Necessidades (abrigo_id, item, quantidade, urgencia) VALUES ($1, $2, $3, $4) RETURNING *',
+      [id, item.trim(), quantidade.trim(), urgencia || 'media']
     );
 
-    console.log('Need added:', result.rows[0].item, 'to shelter:', id);
+    console.log('Need added:', result.rows[0].item);
     res.status(201).json({ success: true, necessidade: result.rows[0] });
 
   } catch (error) {

@@ -1,328 +1,199 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import styles from '../styles/AddShelter.module.css';
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import Head from 'next/head'
+import Header from '../components/Header'
+import styles from '../styles/Form.module.css'
 
 export default function AddShelter() {
-    const [formData, setFormData] = useState({
-	nome: '',
-	rua: '',
-	numero: '',
-	bairro: '',
-	cep: '',
-	cidade: '',
-	tipo_abrigo: [],
-	vagas_disponiveis: '',
-	formulario_inscricao_url: ''
-    });
-    const [loading, setLoading] = useState(false);
-    const [user, setUser] = useState(null);
-    const router = useRouter();
-    const opcoesDeAbrigo = [
-	{ value: "Feminino", label: "Feminino" },
-	{ value: "Masculino", label: "Masculino" },
-	{ value: "Pets", label: "Pets" },
-    ];
-
-
-  const shelterTypes = {
-      aceita_pets: false,
-      tipo_feminino: false,
-      tipo_masculino: false,
-  };
-
- const selectedTypes = formData.tipo_abrigo;
-
- for (const type of selectedTypes) {
-     if (type === 'Pets') shelterTypes.aceita_pets = true;
-     if (type === 'Feminino') shelterTypes.tipo_feminino = true;
-     if (type === 'Masculino') shelterTypes.tipo_masculino = true;
- }
+  const [nome, setNome] = useState('')
+  const [endereco, setEndereco] = useState('')
+  const [vagasDisponiveis, setVagasDisponiveis] = useState('')
+  const [formularioUrl, setFormularioUrl] = useState('')
+  const [tipoAbrigo, setTipoAbrigo] = useState([])
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
-    // Verificar se usuário está logado
-    const userData = localStorage.getItem('user');
-    if (!userData) {
-      router.push('/login');
-      return;
+    const user = localStorage.getItem('user')
+    if (!user) {
+      router.push('/login')
     }
-    setUser(JSON.parse(userData));
-  }, []);
+  }, [router])
 
-    const handleInputChange = (e) => {
-	const { name, value } = e.target;
-	setFormData(prev => ({
-	    ...prev,
-	    [name]: value
-	}));
-    };
-
-
-    const handleCheckboxChange = (e) => {
-	const { value, checked } = e.target;
-
-	setFormData(prevFormData => {
-	    if (checked) {
-		return {
-		    ...prevFormData,
-		    tipo_abrigo: [...prevFormData.tipo_abrigo, value]
-		};
-	    }
-	    else {
-		return {
-		    ...prevFormData,
-		    tipo_abrigo: prevFormData.tipo_abrigo.filter(item => item !== value)
-		};
-	    }
-	});
-    };
-
-
-  // Função para formatar CEP
-  const handleCepChange = (e) => {
-    let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
-    if (value.length > 5) {
-      value = value.replace(/(\d{5})(\d{1,3})/, '$1-$2');
-    }
-    setFormData(prev => ({
-      ...prev,
-      cep: value
-    }));
-  };
+  const handleTipoChange = (tipo) => {
+    setTipoAbrigo(prev => 
+      prev.includes(tipo) 
+        ? prev.filter(t => t !== tipo)
+        : [...prev, tipo]
+    )
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    const user = JSON.parse(localStorage.getItem('user'))
 
     try {
-      // Montar o endereço completo
-      const enderecoCompleto = `${formData.rua}, ${formData.numero} - ${formData.bairro}, ${formData.cidade} - CEP: ${formData.cep}`.trim();
-
       const response = await fetch('http://localhost:5000/api/abrigos', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome: formData.nome,
-          endereco: enderecoCompleto,
-          tipo_abrigo: formData.tipo_abrigo,
-          vagas_disponiveis: formData.vagas_disponiveis,
-          formulario_inscricao_url: formData.formulario_inscricao_url,
-          usuario_id: user.id
+          usuario_id: user.id,
+          nome,
+          endereco,
+          vagas_disponiveis: parseInt(vagasDisponiveis) || 0,
+          formulario_inscricao_url: formularioUrl || null,
+          tipo_abrigo: tipoAbrigo
         }),
-      });
+      })
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          alert('Abrigo cadastrado com sucesso!');
-          router.push('/manage-shelters');
-        } else {
-          alert('Erro ao cadastrar abrigo: ' + data.error);
-        }
+      const data = await response.json()
+
+      if (data.success) {
+        router.push('/manage-shelters')
       } else {
-        const errorData = await response.json();
-        alert('Erro ao cadastrar abrigo: ' + (errorData.error || 'Erro desconhecido'));
+        setError(data.error || 'Erro ao criar abrigo')
       }
-    } catch (error) {
-      console.error('Erro ao cadastrar abrigo:', error);
-      alert('Erro ao cadastrar abrigo. Tente novamente.');
+    } catch (err) {
+      setError('Erro ao conectar com o servidor')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  if (!user) {
-    return <div className={styles.loading}>Carregando...</div>;
+  const handleCancel = () => {
+    router.back()
   }
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div className={styles.headerContent}>
-          <h1>
-            <Link href="/">Baita Ajuda</Link>
-          </h1>
-        </div>
-      </div>
+      <Head>
+        <title>Adicionar Abrigo - Baita Ajuda</title>
+      </Head>
+
+      <Header />
 
       <main className={styles.main}>
-        <div className={styles.formContainer}>
-          <div className={styles.formContent}>
-            <h2>Adicionar Novo Abrigo</h2>
+        <div className={styles.card}>
+          <h1 className={styles.title}>Adicionar Novo Abrigo</h1>
+          <p className={styles.subtitle}>Preencha as informações do abrigo</p>
 
-            <form onSubmit={handleSubmit}>
-              <div className={styles.formGroup}>
-                <label htmlFor="nome">
-                  Nome do Abrigo *
-                </label>
-                <input
-                  type="text"
-                  id="nome"
-                  name="nome"
-                  value={formData.nome}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Digite o nome do abrigo"
-                />
-              </div>
+          {error && <div className={styles.error}>{error}</div>}
 
-              {/* Seção de Endereço */}
-              <div className={styles.addressSection}>
-                <h3>Endereço</h3>
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.formGroup}>
+              <label htmlFor="nome" className={styles.label}>
+                Nome do Abrigo<span className={styles.required}>*</span>
+              </label>
+              <input
+                id="nome"
+                type="text"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                required
+                className={styles.input}
+                placeholder="Ex: Abrigo Central Porto Alegre"
+              />
+            </div>
 
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="rua">
-                      Rua *
-                    </label>
-                    <input
-                      type="text"
-                      id="rua"
-                      name="rua"
-                      value={formData.rua}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Nome da rua"
-                    />
-                  </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="endereco" className={styles.label}>
+                Endereço<span className={styles.required}>*</span>
+              </label>
+              <textarea
+                id="endereco"
+                value={endereco}
+                onChange={(e) => setEndereco(e.target.value)}
+                required
+                className={styles.textarea}
+                placeholder="Endereço completo do abrigo"
+              />
+            </div>
 
-                  <div className={styles.formGroup}>
-                    <label htmlFor="numero">
-                      Número *
-                    </label>
-                    <input
-                      type="text"
-                      id="numero"
-                      name="numero"
-                      value={formData.numero}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Nº"
-                    />
-                  </div>
-                </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="vagas" className={styles.label}>
+                Vagas Disponíveis
+              </label>
+              <input
+                id="vagas"
+                type="number"
+                value={vagasDisponiveis}
+                onChange={(e) => setVagasDisponiveis(e.target.value)}
+                min="0"
+                className={styles.input}
+                placeholder="0"
+              />
+              <span className={styles.hint}>Deixe em branco se não souber</span>
+            </div>
 
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="bairro">
-                      Bairro *
-                    </label>
-                    <input
-                      type="text"
-                      id="bairro"
-                      name="bairro"
-                      value={formData.bairro}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Nome do bairro"
-                    />
-                  </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="url" className={styles.label}>
+                URL do Formulário de Inscrição
+              </label>
+              <input
+                id="url"
+                type="url"
+                value={formularioUrl}
+                onChange={(e) => setFormularioUrl(e.target.value)}
+                className={styles.input}
+                placeholder="https://..."
+              />
+              <span className={styles.hint}>Link para formulário online (opcional)</span>
+            </div>
 
-                  <div className={styles.formGroup}>
-                    <label htmlFor="cep">
-                      CEP *
-                    </label>
-                    <input
-                      type="text"
-                      id="cep"
-                      name="cep"
-                      value={formData.cep}
-                      onChange={handleCepChange}
-                      required
-                      placeholder="00000-000"
-                      maxLength="9"
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label htmlFor="cidade">
-                    Cidade *
-                  </label>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Tipo de Abrigo</label>
+              <div className={styles.checkboxGroup}>
+                <label className={styles.checkboxLabel}>
                   <input
-                    type="text"
-                    id="cidade"
-                    name="cidade"
-                    value={formData.cidade}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Nome da cidade"
+                    type="checkbox"
+                    checked={tipoAbrigo.includes('Feminino')}
+                    onChange={() => handleTipoChange('Feminino')}
                   />
-                </div>
-              </div>
-
-	      <div className={styles.formGroup}>
-		<label>Tipo de Abrigo *</label>
-
-		{opcoesDeAbrigo.map((opcao) => (
-		<label key={opcao.value} className={styles.checkboxLabel}>
-		  <input
-		    type="checkbox"
-		    name="tipo_abrigo"
-		    id="tipo_abrigo"
-		    value={opcao.value}
-		    checked={formData.tipo_abrigo.includes(opcao.value)}
-		    onChange={handleCheckboxChange}
-		    />
-		    {opcao.label}
-		  </label>
-		  ))}
-
-	      </div>
-
-              <div className={styles.formGroup}>
-                <label htmlFor="vagas_disponiveis">
-                  Vagas Disponíveis *
+                  <span>Feminino</span>
                 </label>
-                <input
-                  type="number"
-                  id="vagas_disponiveis"
-                  name="vagas_disponiveis"
-                  value={formData.vagas_disponiveis}
-                  onChange={handleInputChange}
-                  min="0"
-                  required
-                  placeholder="Número de vagas disponíveis"
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label htmlFor="formulario_inscricao_url">
-                  URL do Formulário de Inscrição
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={tipoAbrigo.includes('Masculino')}
+                    onChange={() => handleTipoChange('Masculino')}
+                  />
+                  <span>Masculino</span>
                 </label>
-                <input
-                  type="url"
-                  id="formulario_inscricao_url"
-                  name="formulario_inscricao_url"
-                  value={formData.formulario_inscricao_url}
-                  onChange={handleInputChange}
-                  placeholder="https://exemplo.com/formulario"
-                />
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={tipoAbrigo.includes('Pets')}
+                    onChange={() => handleTipoChange('Pets')}
+                  />
+                  <span>Aceita Pets 🐾</span>
+                </label>
               </div>
+            </div>
 
-              <div className={styles.formActions}>
-                <button
-                  type="button"
-                  className={`${styles.btn} ${styles.btnSecondary}`}
-                  onClick={() => router.push('/manage-shelters')}
-                  disabled={loading}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className={`${styles.btn} ${styles.btnPrimary}`}
-                  disabled={loading}
-                >
-                  {loading ? 'Cadastrando...' : 'Cadastrar Abrigo'}
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className={styles.buttonGroup}>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className={`${styles.button} ${styles.buttonSecondary}`}
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className={`${styles.button} ${styles.buttonPrimary}`}
+              >
+                {loading ? 'Criando...' : 'Criar Abrigo'}
+              </button>
+            </div>
+          </form>
         </div>
       </main>
     </div>
-  );
+  )
 }

@@ -1,0 +1,198 @@
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #87CEEB; /* Fundo azul claro estilo a imagem */
+  font-family: 'Arial', sans-serif;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  background-color: #66CCCC; /* Tom de azul esverdeado da imagem */
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  color: white;
+  border-bottom: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.logoArea {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.helpIcon {
+  background: white;
+  color: black;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 20px;
+  border: 2px solid black;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  margin: 0;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.navLink {
+  color: white;
+  text-decoration: none;
+  font-size: 20px;
+  text-transform: uppercase;
+}
+
+.divider {
+  font-size: 24px;
+  font-weight: lighter;
+}
+
+/* Layout Principal */
+.mainContent {
+  display: flex;
+  flex: 1;
+  padding: 15px;
+  gap: 15px;
+  height: calc(100vh - 60px);
+}
+
+/* Sidebar */
+.sidebar {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  /* Ocultar scrollbar mas manter funcional */
+  scrollbar-width: none; 
+}
+
+.colorBlock {
+  flex: 1;
+  min-height: 60px;
+  border: 2px solid black;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.colorBlock:hover {
+  transform: scale(1.02);
+}
+
+/* Área do Mapa */
+.mapArea {
+  flex: 1;
+  position: relative; /* Para posicionar a busca */
+  border: 2px solid white;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mapContainer {
+  width: 100%;
+  height: 600px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #e5e3df;
+}
+
+/* Barra de Busca Flutuante */
+.searchOverlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000; /* Acima do mapa */
+  width: 80%;
+  max-width: 600px;
+}
+
+.searchBar {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 25px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.searchBar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  padding: 0 10px;
+  outline: none;
+}
+
+.menuIcon, .searchIcon {
+  font-size: 20px;
+  color: #666;
+  cursor: pointer;
+}
+
+.main {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.filterContainer {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.shelterSection {
+  margin-bottom: 3rem;
+}
+
+.shelterSection h2 {
+  margin-bottom: 1.5rem;
+  color: #333;
+  font-size: 1.8rem;
+}
+
+/* Mapa Section */
+.mapSection {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e0e0e0;
+}
+
+.mapSection h2 {
+  margin-bottom: 1.5rem;
+  color: #333;
+  font-size: 1.8rem;
+}
+
+@media (max-width: 768px) {
+  .mapContainer {
+    height: 400px;
+  }
+}

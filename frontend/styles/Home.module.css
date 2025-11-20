@@ -1,237 +1,180 @@
 .container {
-    min-height: 100vh;
-    background-color: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--gray-50);
 }
 
-.header {
-    background-color: #007bff;
-    color: white;
-    padding: 1.5rem 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.headerContent {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1rem;
-    text-align: center;
-}
-
-.headerContent h1 {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 600;
-}
-
+/* Main Content */
 .main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-    text-align: center;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
 }
 
-.main h2 {
-    color: #333;
-    margin-bottom: 1rem;
-}
-
-.main p {
-    color: #666;
-    line-height: 1.6;
-    margin-bottom: 2rem;
-}
-
-.buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.btn {
-    display: inline-block;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    padding: 12px 24px;
-    border-radius: 5px;
-    font-weight: 500;
-    transition: background-color 0.3s ease;
-}
-
-.btn:hover {
-    background-color: #0056b3;
-}
-
-.shelterListContainer {
-    width: 100%;
-    max-width: 800px;
-    margin-top: 40px;
-    text-align: center;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.shelterList {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 20px;
-}
-
-.shelterCard {
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 16px;
-    text-align: left;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.shelterCard h3 {
-    margin-top: 0;
-    color: #333;
-}
-
-.tags {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.tag {
-    background-color: #e0e0e0;
-    color: #555;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: bold;
-}
-
-.errorMsg {
-    color: #d9534f;
-    font-weight: bold;
-}
-
-/* Add these styles to styles/Home.module.css */
-
+/* Filtros */
 .filterContainer {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 800px;
-    margin-top: 20px;
-    padding: 16px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem; /* Reduzido de 2rem para 1.5rem */
+  flex-wrap: wrap;
+  align-items: center;
+  background: var(--white);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.searchInput,
+.vagasInput {
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  transition: all var(--transition-base);
+  background: var(--white);
+  color: var(--gray-800);
 }
 
 .searchInput {
-    flex-grow: 1;
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+  flex: 1;
+  min-width: 250px;
 }
 
 .vagasInput {
-    width: 120px;
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+  max-width: 150px;
+}
+
+.searchInput:focus,
+.vagasInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .checkboxLabel {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-size: 0.95rem;
+  user-select: none;
+  border: 2px solid transparent;
 }
 
-.paginationContainer {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    margin-top: 24px;
-    padding: 16px;
-    width: 100%;
+.checkboxLabel:hover {
+  background: var(--gray-100);
+  border-color: var(--primary-light);
 }
 
-.paginationContainer button,
-.paginationContainer select {
-    padding: 8px 16px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #fff;
-    cursor: pointer;
-}
-
-.paginationContainer button:disabled {
-    background-color: #f0f0f0;
-    color: #aaa;
-    cursor: not-allowed;
-}
-
-.paginationContainer span {
-    font-weight: bold;
+.checkboxLabel input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
 }
 
 .distanceButton {
-  padding: 8px 12px;
-  border: 1px solid #007bff;
-  background-color: #fff;
-  color: #007bff;
-  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  white-space: nowrap; /* Prevents text from wrapping */
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
 }
 
 .distanceButton:hover {
-  background-color: #f0f8ff;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
-.distanceText {
-  font-weight: bold;
-  color: #007bff;
+.distanceButton:active {
+  transform: translateY(0);
+}
+
+/* Seção de Abrigos (agora usada para o mapa) */
+.shelterSection {
+  margin-bottom: 0; /* Removido margem inferior */
+}
+
+.shelterSection h2 {
+  margin: 0 0 1rem 0; /* Reduzido de 1.5rem para 1rem */
+  color: var(--gray-800);
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.errorMsg {
+  color: var(--danger-color);
+  padding: 1rem 1.5rem;
+  background: rgba(220, 53, 69, 0.1);
+  border-left: 4px solid var(--danger-color);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+
+/* Seção do Mapa */
+.mapContainer {
+  width: 100%;
+  height: 650px; /* Aumentado de 600px para 650px */
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  background: var(--gray-200);
+  border: 2px solid var(--gray-200);
+}
+
+/* Responsivo */
+@media (max-width: 1024px) {
+  .filterContainer {
+    gap: 0.75rem;
+  }
 }
 
 @media (max-width: 768px) {
+  .main {
+    padding: 1rem;
+  }
 
-    .main {
-	padding: 1rem;
-    }
+  .filterContainer {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
 
-    .buttons {
-	flex-direction: column;
-	align-items: center;
-    }
+  .searchInput,
+  .vagasInput,
+  .checkboxLabel,
+  .distanceButton {
+    width: 100%;
+  }
 
-    .btn {
-	width: 200px;
-    }
+  .mapContainer {
+    height: 500px; /* Ajustado para mobile */
+  }
 
-
-    .buttons {
-	flex-direction: column;
-	width: 100%;
-	align-items: center;
-    }
-
-    .filterContainer {
-	flex-direction: column;
-	align-items: stretch;
-	padding: 1rem;
-    }
-
-    .searchInput,
-    .vagasInput,
-    .checkboxLabel {
-	width: 100%;
-    }
-
-    .shelterListContainer {
-	padding: 0;
-    }
+  .shelterSection h2 {
+    font-size: 1.5rem;
+  }
 }
