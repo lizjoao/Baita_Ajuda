@@ -280,10 +280,19 @@ export default function ShelterDetail() {
 			    </div>
 			    <div className={styles.infoBlock}>
 				<h3>Aceita:</h3>
-				<div className={styles.tags}>
-				    {shelter.aceita_pets && <span>Pets</span>}
-				    {shelter.tipo_feminino && <span>Feminino</span>}
-				    {shelter.tipo_masculino && <span>Masculino</span>}
+				<div className={styles.acceptList}>
+					<div className={styles.acceptRow}>
+						<span className={styles.acceptLabel}>Pets:</span>
+						<strong className={styles.acceptValue}>{shelter.aceita_pets ? 'Sim' : 'Não'}</strong>
+					</div>
+					<div className={styles.acceptRow}>
+						<span className={styles.acceptLabel}>Mulheres:</span>
+						<strong className={styles.acceptValue}>{shelter.tipo_feminino ? 'Sim' : 'Não'}</strong>
+					</div>
+					<div className={styles.acceptRow}>
+						<span className={styles.acceptLabel}>Homens:</span>
+						<strong className={styles.acceptValue}>{shelter.tipo_masculino ? 'Sim' : 'Não'}</strong>
+					</div>
 				</div>
 			    </div>
 			    <div className={styles.infoBlock}>
@@ -295,11 +304,11 @@ export default function ShelterDetail() {
 		    <section className={`${styles.card} ${styles.mapCard}`}>
 			<h2 className={styles.mapTitle}>Localização no mapa</h2>
 			<div className={styles.mapContainer}>
-			    {shelter.latitude && shelter.longitude ? (
+				{(shelter.latitude || shelter.lat) && (shelter.longitude || shelter.lng) ? (
 				<Map shelters={[shelter]} />
-			    ) : (
+				) : (
 				<p className={styles.noMapData}>Localização do mapa indisponível.</p>
-			    )}
+				)}
 			</div>
 		    </section>
 		</div>

@@ -258,6 +258,33 @@
   white-space: nowrap; /* Ensures tags don't break */
 }
 
+/* --- Acceptance list (Pets / Mulheres / Homens) --- */
+.acceptList {
+  display: grid;
+  grid-template-columns: 1fr; /* single column of rows */
+  gap: 6px 12px;
+}
+.acceptRow {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+}
+.acceptLabel {
+  min-width: 90px; /* reserve space so values align vertically */
+  color: #555;
+  font-weight: 600;
+  text-align: left;
+}
+.acceptValue {
+  color: #222;
+  font-weight: 700;
+}
+
+@media (max-width: 576px) {
+  .acceptLabel { min-width: 80px; }
+}
+
 /* --- Modal Styles --- */
 .modalBackdrop {
   position: fixed;

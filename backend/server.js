@@ -74,7 +74,12 @@ app.post('/api/auth/register', async (req, res) => {
       return badRequest(res, 'Email already in use');
     }
 
-    const hashedPassword = await bcrypt.hash(senha, 12);
+      let selectClause = `SELECT a.*, u.nome as responsavel_nome,
+        (SELECT ROUND(AVG(nota)::numeric,2) FROM avaliacoes av WHERE av.abrigo_id = a.id) AS media_avaliacoes,
+        (SELECT COUNT(*) FROM avaliacoes av WHERE av.abrigo_id = a.id) AS total_avaliacoes,
+        (SELECT av.comentario FROM avaliacoes av WHERE av.abrigo_id = a.id ORDER BY av.data_avaliacao DESC NULLS LAST LIMIT 1) AS last_review_comentario,
+        (SELECT av.nota FROM avaliacoes av WHERE av.abrigo_id = a.id ORDER BY av.data_avaliacao DESC NULLS LAST LIMIT 1) AS last_review_nota,
+        (SELECT av.data_avaliacao FROM avaliacoes av WHERE av.abrigo_id = a.id ORDER BY av.data_avaliacao DESC NULLS LAST LIMIT 1) AS last_review_data`;
 
     // Detect whether the usuarios table has a coluna 'senha_hash'. If not, fall back to legacy 'senha'.
     const colRes = await pool.query(
@@ -340,10 +345,23 @@ app.get('/api/abrigos', async (req, res) => {
       const lngVal = r.longitude !== undefined && r.longitude !== null ? Number(r.longitude)
         : (r.lng !== undefined && r.lng !== null ? Number(r.lng) : undefined);
 
+      const normalizeBool = (v, defaultVal = false) => {
+        if (v === true || v === 't' || v === '1' || v === 1) return true;
+        if (v === false || v === 'f' || v === '0' || v === 0) return false;
+        if (v === null || v === undefined || v === '') return defaultVal;
+        const str = String(v).toLowerCase();
+        if (['true', 't', '1', 'yes', 'y'].includes(str)) return true;
+        if (['false', 'f', '0', 'no', 'n'].includes(str)) return false;
+        return defaultVal;
+      };
+
       return {
         ...r,
         lat: latVal,
-        lng: lngVal
+        lng: lngVal,
+        aceita_pets: normalizeBool(r.aceita_pets, false),
+        tipo_feminino: normalizeBool(r.tipo_feminino, true),
+        tipo_masculino: normalizeBool(r.tipo_masculino, true)
       };
     });
 
@@ -391,16 +409,49 @@ app.get('/api/abrigos/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query(
-      'SELECT * FROM Abrigos WHERE id = $1 AND ativo = true',
-      [id]
-    );
+        const result = await pool.query(
+          `SELECT a.*,
+                  (SELECT ROUND(AVG(nota)::numeric,2) FROM avaliacoes av WHERE av.abrigo_id = a.id) AS media_avaliacoes,
+                  (SELECT COUNT(*) FROM avaliacoes av WHERE av.abrigo_id = a.id) AS total_avaliacoes,
+                  (SELECT av.comentario FROM avaliacoes av WHERE av.abrigo_id = a.id ORDER BY av.data_avaliacao DESC NULLS LAST LIMIT 1) AS last_review_comentario,
+                  (SELECT av.nota FROM avaliacoes av WHERE av.abrigo_id = a.id ORDER BY av.data_avaliacao DESC NULLS LAST LIMIT 1) AS last_review_nota,
+                  (SELECT av.data_avaliacao FROM avaliacoes av WHERE av.abrigo_id = a.id ORDER BY av.data_avaliacao DESC NULLS LAST LIMIT 1) AS last_review_data
+           FROM Abrigos a
+           WHERE a.id = $1 AND a.ativo = true`,
+          [id]
+        );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
     }
 
-    res.json({ success: true, abrigo: result.rows[0] });
+    const r = result.rows[0];
+
+    const normalizeBool = (v, defaultVal = false) => {
+      if (v === true || v === 't' || v === '1' || v === 1) return true;
+      if (v === false || v === 'f' || v === '0' || v === 0) return false;
+      if (v === null || v === undefined || v === '') return defaultVal;
+      const str = String(v).toLowerCase();
+      if (['true', 't', '1', 'yes', 'y'].includes(str)) return true;
+      if (['false', 'f', '0', 'no', 'n'].includes(str)) return false;
+      return defaultVal;
+    };
+
+    const latVal = r.latitude !== undefined && r.latitude !== null ? Number(r.latitude)
+      : (r.lat !== undefined && r.lat !== null ? Number(r.lat) : undefined);
+    const lngVal = r.longitude !== undefined && r.longitude !== null ? Number(r.longitude)
+      : (r.lng !== undefined && r.lng !== null ? Number(r.lng) : undefined);
+
+    const abrigoNormalized = {
+      ...r,
+      lat: latVal,
+      lng: lngVal,
+      aceita_pets: normalizeBool(r.aceita_pets, false),
+      tipo_feminino: normalizeBool(r.tipo_feminino, true),
+      tipo_masculino: normalizeBool(r.tipo_masculino, true)
+    };
+
+    res.json({ success: true, abrigo: abrigoNormalized });
 
   } catch (error) {
     handleError(res, error, 'Failed to fetch shelter');
