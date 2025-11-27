@@ -1,518 +1,574 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import Header from '../../components/Header';
 import styles from '../../styles/ShelterDetailsUser.module.css';
 
-const StarRating = ({ rating, onRatingChange, className }) => {
-    const [hover, setHover] = useState(0);
-
-    return (
-        <div className={className}>
-            {[...Array(5)].map((_, index) => {
-                const ratingValue = index + 1;
-                return (
-                    <label key={index}>
-                        <input
-                            type="radio"
-                            name="rating"
-                            value={ratingValue}
-                            onClick={() => onRatingChange(ratingValue)}
-                            style={{ display: 'none' }} // Hide radio button
-                        />
-                        <span
-                            className={styles.star}
-                            style={{
-                                color: ratingValue <= (hover || rating) ? "#ffc107" : "#e4e5e9"
-                            }}
-                            onMouseEnter={() => setHover(ratingValue)}
-                            onMouseLeave={() => setHover(0)}
-                        >
-                            &#9733; {/* Unicode star character */}
-                        </span>
-                    </label>
-                );
-            })}
-        </div>
-    );
-};
-
+/* ==========================================================================
+   DYNAMIC IMPORTS
+   ========================================================================== */
 const Map = dynamic(() => import('../../components/Map'), {
-    ssr: false,
-    loading: () => <div className={styles.loadingMap}>Carregando mapa...</div>
+  ssr: false,
+  loading: () => <div className={styles.loadingMap}>Carregando mapa...</div>
 });
 
-function ReviewDistribution({ totalReviews, distribution, averageRating }) {
+/* ==========================================================================
+   HELPER COMPONENTS
+   ========================================================================== */
 
-    const displayDistribution = totalReviews > 0 ? distribution : [
-        { stars: 5, count: 0, percentage: 0 },
-        { stars: 4, count: 0, percentage: 0 },
-        { stars: 3, count: 0, percentage: 0 },
-        { stars: 2, count: 0, percentage: 0 },
-        { stars: 1, count: 0, percentage: 0 },
-    ];
+const StarRating = ({ rating, onRatingChange, className }) => {
+  const [hover, setHover] = useState(0);
 
-    return (
-        <div className={styles.reviewDistribution}>
-            <h3>{averageRating} de 5 ⭐</h3>
-            <p className={styles.totalReviewsText}>
-                {totalReviews} avaliações globais
-            </p>
-
-            <div className={styles.barsContainer}>
-                {displayDistribution.map(({ stars, count, percentage }) => (
-                    <div key={stars} className={styles.barRow}>
-                        <span className={styles.starLabel}>{stars} estrelas</span>
-                        <div className={styles.barWrapper}>
-                            {/* The width will be 0% if totalReviews is 0 */}
-                            <div className={styles.progressBar} style={{ width: `${percentage}%` }}></div>
-                        </div>
-                        <span className={styles.percentageLabel}>{percentage}%</span>
-                    </div>
-                ))}
-            </div>
-
-            {/* Optionally add a message if there are no reviews */}
-            {totalReviews === 0 && (
-                <p className={styles.noReviewsMessage}>Seja o primeiro a avaliar este abrigo!</p>
-            )}
-
-        </div>
-    );
-}
-
-const calculateReviewDistribution = (reviews) => {
-    const totalReviews = reviews.length;
-
-    // Initialize counts for stars 1 through 5
-    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-
-    // 1. Calculate raw counts
-    reviews.forEach(review => {
-        const rating = Math.round(review.nota); // Assuming 'nota' is the rating (e.g., 5, 4, 3, etc.)
-        if (rating >= 1 && rating <= 5) {
-            counts[rating]++;
-        }
-    });
-
-    // 2. Calculate percentages and format the final array
-    const distribution = [5, 4, 3, 2, 1].map(stars => {
-        const count = counts[stars];
-        // Calculate percentage, handling division by zero if totalReviews is 0
-        const percentage = totalReviews > 0
-            ? Math.round((count / totalReviews) * 100)
-            : 0;
-
-        return {
-            stars: stars,
-            count: count,
-            percentage: percentage,
-        };
-    });
-
-    return distribution;
+  return (
+    <div className={className}>
+      {[...Array(5)].map((_, index) => {
+        const ratingValue = index + 1;
+        return (
+          <label key={index}>
+            <input
+              type="radio"
+              name="rating"
+              value={ratingValue}
+              onClick={() => onRatingChange(ratingValue)}
+              style={{ display: 'none' }}
+            />
+            <span
+              className={styles.star}
+              style={{
+                color: ratingValue <= (hover || rating) ? "#ffc107" : "#e4e5e9"
+              }}
+              onMouseEnter={() => setHover(ratingValue)}
+              onMouseLeave={() => setHover(0)}
+            >
+              &#9733;
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
 };
 
+function ReviewDistribution({ totalReviews, distribution, averageRating }) {
+  const displayDistribution = totalReviews > 0 ? distribution : [
+    { stars: 5, count: 0, percentage: 0 },
+    { stars: 4, count: 0, percentage: 0 },
+    { stars: 3, count: 0, percentage: 0 },
+    { stars: 2, count: 0, percentage: 0 },
+    { stars: 1, count: 0, percentage: 0 },
+  ];
+
+  return (
+    <div className={styles.reviewDistribution}>
+      <h3>{averageRating} de 5 ⭐</h3>
+      <p className={styles.totalReviewsText}>
+        {totalReviews} avaliações globais
+      </p>
+
+      <div className={styles.barsContainer}>
+        {displayDistribution.map(({ stars, count, percentage }) => (
+          <div key={stars} className={styles.barRow}>
+            <span className={styles.starLabel}>{stars} estrelas</span>
+            <div className={styles.barWrapper}>
+              <div className={styles.progressBar} style={{ width: `${percentage}%` }}></div>
+            </div>
+            <span className={styles.percentageLabel}>{percentage}%</span>
+          </div>
+        ))}
+      </div>
+
+      {totalReviews === 0 && (
+        <p className={styles.noReviewsMessage}>Seja o primeiro a avaliar este abrigo!</p>
+      )}
+    </div>
+  );
+}
+
+/* ==========================================================================
+   UTILITY FUNCTIONS
+   ========================================================================== */
+
+const calculateReviewDistribution = (reviews) => {
+  const totalReviews = reviews.length;
+  const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+
+  reviews.forEach(review => {
+    const rating = Math.round(review.nota);
+    if (rating >= 1 && rating <= 5) {
+      counts[rating]++;
+    }
+  });
+
+  return [5, 4, 3, 2, 1].map(stars => {
+    const count = counts[stars];
+    const percentage = totalReviews > 0
+      ? Math.round((count / totalReviews) * 100)
+      : 0;
+
+    return { stars, count, percentage };
+  });
+};
+
+const calculateMeanRating = (reviews) => {
+  if (!reviews || reviews.length === 0) {
+    return '0.0';
+  }
+  const sum = reviews.reduce((acc, review) => acc + review.nota, 0);
+  return (sum / reviews.length).toFixed(1);
+};
+
+/* ==========================================================================
+   MAIN PAGE COMPONENT
+   ========================================================================== */
+
 export default function ShelterDetail() {
+  const router = useRouter();
+  const { id } = router.query;
 
-    const router = useRouter();
-    const { id } = router.query;
+  // --- State ---
+  const [shelter, setShelter] = useState(null);
+  const [needs, setNeeds] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [donationsList, setDonationsList] = useState([]);
 
-    const [shelter, setShelter] = useState(null);
-    const [needs, setNeeds] = useState([]);
-    const [reviews, setReviews] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    const [reviewData, setReviewData] = useState({ nota: 5, comentario: '', anonimo: false });
-    const [reviewSubmitting, setReviewSubmitting] = useState(false);
-    const [reviewError, setReviewError] = useState(null);
-    const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewData, setReviewData] = useState({ nota: 5, comentario: '', anonimo: false });
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState(null);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [donations, setDonations] = useState({}); // e.g., { need_id_1: 5, need_id_2: 10 }
-    const [donorName, setDonorName] = useState('');
-    const [donorContact, setDonorContact] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [donations, setDonations] = useState({});
+  const [donorName, setDonorName] = useState('');
+  const [donorContact, setDonorContact] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-    const [donationsList, setDonationsList] = useState([]);
+  // --- Effects ---
+  useEffect(() => {
+    if (!id) return;
 
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [shelterRes, needsRes, reviewsRes, donationsRes] = await Promise.all([
+          fetch(`http://localhost:5000/api/abrigos/${id}`),
+          fetch(`http://localhost:5000/api/abrigos/${id}/necessidades`),
+          fetch(`http://localhost:5000/api/abrigos/${id}/avaliacoes`),
+          fetch(`http://localhost:5000/api/abrigos/${id}/doacoes`)
+        ]);
 
-    const handleSubmitReview = async (e) => {
-	e.preventDefault();
-	setReviewSubmitting(true);
-	setReviewError(null);
-	setReviewSuccess(false);
+        if (!shelterRes.ok) throw new Error('Abrigo não encontrado');
 
-	try {
-            const payload = {
-		...reviewData,
-		// You should add the user's ID here if they are logged in and the review is not anonymous.
-		// usuario_id: user?.id,
-            };
+        const shelterData = await shelterRes.json();
+        const needsData = await needsRes.json();
+        const reviewsData = await reviewsRes.json();
+        const donationsData = await donationsRes.json();
 
-            const response = await fetch(`http://localhost:5000/api/abrigos/${id}/avaliacoes`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(payload),
-            });
+        setShelter(shelterData.abrigo);
+        setNeeds(needsData.necessidades);
+        setReviews(reviewsData.avaliacoes);
+        setDonationsList(donationsData.doacoes);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-            const data = await response.json();
+    fetchData();
+  }, [id]);
 
-            if (!response.ok) {
-		throw new Error(data.error || 'Falha ao enviar avaliação.');
-            }
+  // --- Handlers ---
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    setReviewSubmitting(true);
+    setReviewError(null);
+    setReviewSuccess(false);
 
-            // 💡 Success: Update the local reviews list and reset the form
-            // Re-fetch reviews to get the updated list and recalculate distribution
-            // (You should replace this simplified logic with a dedicated refresh function if you have one)
-            const updatedReviewsRes = await fetch(`http://localhost:5000/api/abrigos/${id}/avaliacoes`);
-            const updatedReviewsData = await updatedReviewsRes.json();
-            setReviews(updatedReviewsData.avaliacoes);
+    try {
+      const payload = { ...reviewData };
 
-            setReviewData({ nota: 5, comentario: '', anonimo: false }); // Reset form
-            setReviewSuccess(true);
+      const response = await fetch(`http://localhost:5000/api/abrigos/${id}/avaliacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-	} catch (err) {
-            console.error("Review submission error:", err);
-            setReviewError(err.message || 'Erro desconhecido ao avaliar.');
-	} finally {
-            setReviewSubmitting(false);
-	}
-    };
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Falha ao enviar avaliação.');
 
+      const updatedReviewsRes = await fetch(`http://localhost:5000/api/abrigos/${id}/avaliacoes`);
+      const updatedReviewsData = await updatedReviewsRes.json();
+      setReviews(updatedReviewsData.avaliacoes);
 
-    useEffect(() => {
-	if (!id) return;
+      setReviewData({ nota: 5, comentario: '', anonimo: false });
+      setReviewSuccess(true);
+    } catch (err) {
+      console.error("Review submission error:", err);
+      setReviewError(err.message || 'Erro desconhecido ao avaliar.');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
-	async function fetchData() {
-	    setLoading(true);
-	    setError(null);
-	    try {
+  const handleDonationChange = (needId, quantity) => {
+    const numQuantity = Number(quantity);
+    setDonations(prev => {
+      const newDonations = { ...prev };
+      if (numQuantity > 0) {
+        newDonations[needId] = numQuantity;
+      } else {
+        delete newDonations[needId];
+      }
+      return newDonations;
+    });
+  };
 
-		const [shelterRes, needsRes, reviewsRes, donationsRes] = await Promise.all([
-		    fetch(`http://localhost:5000/api/abrigos/${id}`),
-		    fetch(`http://localhost:5000/api/abrigos/${id}/necessidades`),
-		    fetch(`http://localhost:5000/api/abrigos/${id}/avaliacoes`),
-		    fetch(`http://localhost:5000/api/abrigos/${id}/doacoes`)
-		]);
+  const handleConfirmDonation = async (e) => {
+    e.preventDefault();
+    const donationItems = Object.keys(donations).map(needId => ({
+      necessidade_id: Number(needId),
+      quantidade: donations[needId],
+    }));
 
-		if (!shelterRes.ok) throw new Error('Abrigo não encontrado');
+    if (donationItems.length === 0) {
+      setSubmitError('Por favor, especifique a quantidade de pelo menos um item.');
+      return;
+    }
 
-		const shelterData = await shelterRes.json();
-		const needsData = await needsRes.json();
-		const reviewsData = await reviewsRes.json();
-		const donationsData = await donationsRes.json();
+    setSubmitting(true);
+    setSubmitError(null);
 
-		setShelter(shelterData.abrigo);
-		setNeeds(needsData.necessidades);
-		setReviews(reviewsData.avaliacoes);
-		setDonationsList(donationsData.doacoes);
-	    } catch (err) {
-		setError(err.message);
-	    } finally {
-		setLoading(false);
-	    }
-	}
+    try {
+      const response = await fetch(`http://localhost:5000/api/abrigos/${id}/doacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doador_nome: donorName,
+          doador_contato: donorContact,
+          doacoes: donationItems,
+        }),
+      });
 
-	fetchData();
-    }, [id]);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Falha ao registrar doação.');
 
+      alert('Obrigado! Sua doação foi registrada com sucesso.');
+      setIsModalOpen(false);
+      setDonations({});
+      setDonorName('');
+      setDonorContact('');
+    } catch (err) {
+      setSubmitError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-    const renderStars = (rating) => {
-	return '⭐'.repeat(rating);
-    };
+  const renderStars = (rating) => '⭐'.repeat(rating);
 
-    if (loading) return <div className={styles.centerStatus}>Carregando...</div>;
-    if (error) return <div className={styles.centerStatus}>Erro: {error}</div>;
-    if (!shelter) return <div className={styles.centerStatus}>Abrigo não encontrado.</div>;
+  // --- Render ---
+  if (loading) return <div className={styles.centerStatus}>Carregando...</div>;
+  if (error) return <div className={styles.centerStatus}>Erro: {error}</div>;
+  if (!shelter) return <div className={styles.centerStatus}>Abrigo não encontrado.</div>;
 
+  const meanRating = calculateMeanRating(reviews);
 
-    const handleDonationChange = (needId, quantity) => {
-	const numQuantity = Number(quantity);
-	setDonations(prev => {
-	    const newDonations = { ...prev };
-	    if (numQuantity > 0) {
-		newDonations[needId] = numQuantity;
-	    } else {
-		delete newDonations[needId]; // Remove if quantity is 0 or empty
-	    }
-	    return newDonations;
-	});
-    };
+  return (
+    <div className={styles.container}>
+      <Header />
+      <main className={styles.main}>
 
-    const handleConfirmDonation = async (e) => {
-	e.preventDefault();
-	const donationItems = Object.keys(donations).map(needId => ({
-	    necessidade_id: Number(needId),
-	    quantidade: donations[needId],
-	}));
+        {/* --- Informações do Abrigo Card --- */}
+        <div className={`${styles.card} ${styles.infoCard}`}>
+          <div className={styles.headerRow}>
+            <h1>{shelter.nome}</h1>
+            <span className={shelter.ativo ? styles.badgeActive : styles.badgeInactive}>
+              {shelter.ativo ? 'Em Funcionamento' : 'Inativo'}
+            </span>
+          </div>
 
-	if (donationItems.length === 0) {
-	    setSubmitError('Por favor, especifique a quantidade de pelo menos um item.');
-	    return;
-	}
+          <div className={styles.cardContent}>
+            {/* LEFT COLUMN: Text Info */}
+            <div className={styles.infoGrid}>
 
-	setSubmitting(true);
-	setSubmitError(null);
+              {/* Location Text */}
+              <div className={styles.infoBlock}>
+                <h3>📍 Localização</h3>
+                <p>{shelter.endereco}</p>
+                <p className={styles.textMuted}>{shelter.cidade} - {shelter.estado}</p>
+              </div>
 
-	try {
-	    const response = await fetch(`http://localhost:5000/api/abrigos/${id}/doacoes`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({
-		    doador_nome: donorName,
-		    doador_contato: donorContact,
-		    doacoes: donationItems,
-		}),
-	    });
+              {/* Contact */}
+              <div className={styles.infoBlock}>
+                <h3>📞 Contato</h3>
+                {shelter.contato_responsavel && (
+                  <p style={{ marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.9rem', color: '#666', display: 'block' }}>Responsável</span>
+                    {shelter.contato_responsavel}
+                  </p>
+                )}
+                {shelter.telefone && (
+                  <p className={styles.iconText}>📞 {shelter.telefone}</p>
+                )}
+                {shelter.email && (
+                  <p className={styles.iconText}>✉️ {shelter.email}</p>
+                )}
+                {!shelter.telefone && !shelter.email && <p className={styles.textMuted}>Sem contato cadastrado</p>}
+              </div>
 
-	    const data = await response.json();
-	    if (!response.ok) throw new Error(data.error || 'Falha ao registrar doação.');
+              {/* Operation & Capacity */}
+              <div className={styles.infoBlock}>
+                <h3>⏰ Funcionamento & Vagas</h3>
+                <p className={styles.iconText}>
+                  <span>{shelter.horario_funcionamento || 'Horário não informado'}</span>
+                </p>
+                <div style={{ marginTop: '0.5rem' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#666', display: 'block', marginBottom: '4px' }}>Capacidade</span>
+                  <span className={shelter.vagas_disponiveis > 0 ? styles.availableStatus : styles.fullStatus} style={{ fontSize: '1.2rem' }}>
+                    {shelter.vagas_disponiveis} vagas livres
+                  </span>
+                  <span className={styles.textMuted}> / {shelter.capacidade_total} total</span>
+                </div>
+              </div>
 
-	    alert('Obrigado! Sua doação foi registrada com sucesso.');
-	    setIsModalOpen(false); // Close the modal
-	    setDonations({});     // Reset the form
-	    setDonorName('');
-	    setDonorContact('');
+              {/* Rating Summary */}
+              <div className={styles.infoBlock}>
+                <h3>Avaliação</h3>
+                <p>
+                  {meanRating} ⭐
+                  <span className={styles.reviewCount}>
+                    ({reviews.length} avaliações)
+                  </span>
+                </p>
+              </div>
 
-	} catch (err) {
-	    setSubmitError(err.message);
-	} finally {
-	    setSubmitting(false);
-	}
-    };
+              {/* Accept Tags */}
+              <div className={styles.infoBlock} style={{ gridColumn: '1 / -1' }}>
+                <h3>Aceita</h3>
+                <div className={styles.tags}>
 
+                  {shelter.aceita_pets && (
+                     <span className={styles.tagPets} style={{opacity: 0.7}}>🐾 Pets</span>
+                  )}
 
-    return (
-	<div className={styles.container}>
-			<Header />
-	    <main className={styles.main}>
+                  {shelter.tipo_feminino && (
+                    <span className={styles.tagFeminino}>Mulheres</span>
+                  )}
+                  {shelter.tipo_masculino && (
+                    <span className={styles.tagMasculino}>Homens</span>
+                  )}
 
-		{/* --- Informações do Abrigo Card --- */}
-		<div className={styles.infoMapWrapper}>
-		    <div className={`${styles.card} ${styles.infoCard}`}>
-			<h1>{shelter.nome}</h1>
-			<div className={styles.infoGrid}>
-			    <div className={styles.infoBlock}>
-				<h3>Endereço:</h3>
-				<p>{shelter.endereco}</p>
-			    </div>
-			    <div className={styles.infoBlock}>
-				<h3>Avaliação:</h3>
-				<p>
-				    {shelter.media_avaliacoes ? Number(shelter.media_avaliacoes).toFixed(1) : '0.0'} ⭐
+                  {!shelter.aceita_pets && !shelter.tipo_feminino && !shelter.tipo_masculino && (
+                    <span className={styles.tagGeneral}>Público Geral</span>
+                  )}
+                </div>
+              </div>
+            </div>
 
-				    <span className={styles.reviewCount}>
-					 ({reviews.length} avaliações)
-				    </span>
-				</p>
-			    </div>
-			    <div className={styles.infoBlock}>
-				<h3>Aceita:</h3>
-				<div className={styles.acceptList}>
-					<div className={styles.acceptRow}>
-						<span className={styles.acceptLabel}>Pets:</span>
-						<strong className={styles.acceptValue}>{shelter.aceita_pets ? 'Sim' : 'Não'}</strong>
-					</div>
-					<div className={styles.acceptRow}>
-						<span className={styles.acceptLabel}>Mulheres:</span>
-						<strong className={styles.acceptValue}>{shelter.tipo_feminino ? 'Sim' : 'Não'}</strong>
-					</div>
-					<div className={styles.acceptRow}>
-						<span className={styles.acceptLabel}>Homens:</span>
-						<strong className={styles.acceptValue}>{shelter.tipo_masculino ? 'Sim' : 'Não'}</strong>
-					</div>
-				</div>
-			    </div>
-			    <div className={styles.infoBlock}>
-				<h3>Vagas:</h3>
-				<p>{shelter.vagas_disponiveis}</p>
-			    </div>
-			</div>
-		    </div>
-		    <section className={`${styles.card} ${styles.mapCard}`}>
-			<h2 className={styles.mapTitle}>Localização no mapa</h2>
-			<div className={styles.mapContainer}>
-				{(shelter.latitude || shelter.lat) && (shelter.longitude || shelter.lng) ? (
-				<Map shelters={[shelter]} />
-				) : (
-				<p className={styles.noMapData}>Localização do mapa indisponível.</p>
-				)}
-			</div>
-		    </section>
-		</div>
+            {/* RIGHT COLUMN: Map */}
+            <div className={styles.mapColumn}>
+              <div className={styles.mapLabel}>Localização no mapa</div>
+              <div className={styles.mapContainer}>
+                {(shelter.latitude || shelter.lat) && (shelter.longitude || shelter.lng) ? (
+                  <Map shelters={[shelter]} />
+                ) : (
+                  <p className={styles.noMapData}>Localização indisponível.</p>
+                )}
+              </div>
+            </div>
+          </div>
 
-		{/* --- Necessidades do Abrigo Card --- */}
-		<div className={styles.card}>
-		    <h2>Necessidades do Abrigo</h2>
+          {/* Description & Restrictions */}
+          {(shelter.descricao || shelter.restricoes) && (
+            <div className={styles.detailsSection}>
+              {shelter.descricao && (
+                <div className={styles.detailBlock}>
+                  <h3>Sobre o Abrigo</h3>
+                  <p>{shelter.descricao}</p>
+                </div>
+              )}
+              {shelter.restricoes && (
+                <div className={styles.detailBlock}>
+                  <h3>⚠️ Restrições e Regras</h3>
+                  <div className={styles.alertBox}>
+                    <p>{shelter.restricoes}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-		    <button onClick={() => setIsModalOpen(true)} className={styles.donateButton}>
-			Doar Itens
-		    </button>
-		    {needs.length > 0 ? (
-			<ul className={styles.needsList}>
-			    {needs.map(need => (
-				<li key={need.id} className={styles.needsItem}>
-				    <p>{need.item}</p>
-				    {need.quantidade && <span>{need.quantidade}</span>}
-				</li>
-			    ))}
-			</ul>
-		    ) : (
-			<p>No momento, não há necessidades específicas cadastradas.</p>
-		    )}
-		</div>
+        {/* --- Needs Card --- */}
+        <div className={styles.card}>
+          <h2>Necessidades do Abrigo</h2>
+          <button onClick={() => setIsModalOpen(true)} className={styles.donateButton}>
+            Doar Itens
+          </button>
 
-		<div className={styles.card}>
-		    <h2>Avaliações</h2>
+          {needs.length > 0 ? (
+            <ul className={styles.needsList}>
+              {needs.map(need => (
+                <li key={need.id} className={styles.needsItem}>
+                  <p>{need.item}</p>
+                  {need.quantidade && <span>{need.quantidade}</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No momento, não há necessidades específicas cadastradas.</p>
+          )}
+        </div>
 
-		    <ReviewDistribution
-			totalReviews={reviews.length}
-			distribution={calculateReviewDistribution(reviews)}
-			averageRating={shelter.media_avaliacoes ? Number(shelter.media_avaliacoes).toFixed(1) : '0.0'}
-		    />
+        {/* --- Reviews Section --- */}
+        <div className={styles.card}>
+          <h2>Avaliações</h2>
+          <ReviewDistribution
+            totalReviews={reviews.length}
+            distribution={calculateReviewDistribution(reviews)}
+            averageRating={meanRating}
+          />
+          <div className={styles.reviewsList}>
+            {reviews.map(review => (
+              <div key={review.id} className={styles.reviewItem}>
+                <div className={styles.reviewHeader}>
+                  <span className={styles.reviewRating}>{renderStars(review.nota)}</span>
+                  <span className={styles.reviewDate}>
+                    {new Date(review.data_avaliacao).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+                <p className={styles.reviewComment}>{review.comentario}</p>
+              </div>
+            ))}
+          </div>
 
-		    <div className={styles.reviewsList}>
-			{reviews.map(review => (
-			    <div key={review.id} className={styles.reviewItem}>
-				<div className={styles.reviewHeader}>
-				    <span className={styles.reviewRating}>{renderStars(review.nota)}</span>
-				    <span className={styles.reviewDate}>
-					{new Date(review.data_avaliacao).toLocaleDateString('pt-BR')}
-				    </span>
-				</div>
-				<p className={styles.reviewComment}>{review.comentario}</p>
-			    </div>
-			))}
-		    </div>
-		    <div className={styles.reviewFormSection}>
-			<h3>Deixe sua Avaliação</h3>
+          <div className={styles.reviewFormSection}>
+            <h3>Deixe sua Avaliação</h3>
+            {reviewError && <p className={styles.errorMsg}>{reviewError}</p>}
+            {reviewSuccess && <p className={styles.successMsg}>Avaliação enviada com sucesso! Obrigado!</p>}
 
-			{reviewError && <p className={styles.errorMsg}>{reviewError}</p>}
-			{reviewSuccess && <p className={styles.successMsg}>Avaliação enviada com sucesso! Obrigado!</p>}
+            <form onSubmit={handleSubmitReview} className={styles.reviewForm}>
+              <div className={styles.formGroup}>
+                <StarRating
+                  rating={reviewData.nota}
+                  onRatingChange={(newRating) => setReviewData({ ...reviewData, nota: newRating })}
+                  className={styles.starRatingContainer}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Comentário (Opcional):</label>
+                <textarea
+                  rows="3"
+                  value={reviewData.comentario}
+                  onChange={(e) => setReviewData({ ...reviewData, comentario: e.target.value })}
+                  placeholder="Conte sua experiência..."
+                  className={styles.commentTextarea}
+                />
+              </div>
+              <div className={styles.checkboxGroup}>
+                <input
+                  type="checkbox"
+                  id="anonimo"
+                  checked={reviewData.anonimo}
+                  onChange={(e) => setReviewData({ ...reviewData, anonimo: e.target.checked })}
+                />
+                <label htmlFor="anonimo">Avaliar anonimamente</label>
+              </div>
+              <button
+                type="submit"
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled={reviewSubmitting}
+              >
+                {reviewSubmitting ? 'Enviando...' : 'Enviar Avaliação'}
+              </button>
+            </form>
+          </div>
+        </div>
 
-			<form onSubmit={handleSubmitReview} className={styles.reviewForm}>
+        {/* --- Donations History --- */}
+        <div className={styles.card}>
+          <h2>Doações Recebidas</h2>
+          {donationsList.length > 0 ? (
+            <ul className={styles.donationsList}>
+              {donationsList.map(donation => (
+                <li key={donation.id} className={styles.donationListItem}>
+                  <div className={styles.donationInfo}>
+                    <span className={styles.donorName}>{donation.doador_nome}</span>
+                    <span> doou </span>
+                    <span className={styles.donationQuantity}>
+                      {donation.quantidade_doada}x {donation.item_nome}
+                    </span>
+                  </div>
+                  <span className={styles.donationDate}>
+                    {new Date(donation.data_doacao).toLocaleDateString('pt-BR')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Este abrigo ainda não registrou doações. Seja o primeiro!</p>
+          )}
+        </div>
 
-			    <div className={styles.formGroup}>
-				<StarRating
-				    rating={reviewData.nota}
-				    onRatingChange={(newRating) => setReviewData({ ...reviewData, nota: newRating })}
-				    className={styles.starRatingContainer} // Use this class for styling
-				/>
-			    </div>
-			    <div className={styles.formGroup}>
-				<label>Comentário (Opcional):</label>
-				<textarea
-				    rows="3"
-				    value={reviewData.comentario}
-				    onChange={(e) => setReviewData({ ...reviewData, comentario: e.target.value })}
-				    placeholder="Conte sua experiência..."
-				    className={styles.commentTextarea}
-				/>
-			    </div>
+        {/* --- Donation Modal --- */}
+        {isModalOpen && (
+          <div className={styles.modalBackdrop}>
+            <div className={styles.modalContent}>
+              <h2>Registrar Doação de Itens</h2>
+              <p>Preencha seu nome, contato e a quantidade dos itens que você deseja doar.</p>
 
-			    <div className={styles.checkboxGroup}>
-				<input
-				    type="checkbox"
-				    id="anonimo"
-				    checked={reviewData.anonimo}
-				    onChange={(e) => setReviewData({ ...reviewData, anonimo: e.target.checked })}
-				/>
-				<label htmlFor="anonimo">Avaliar anonimamente</label>
-			    </div>
+              <form onSubmit={handleConfirmDonation} className={styles.donationForm}>
+                <input
+                  type="text"
+                  placeholder="Seu nome completo *"
+                  value={donorName}
+                  onChange={(e) => setDonorName(e.target.value)}
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Seu e-mail ou telefone (opcional)"
+                  value={donorContact}
+                  onChange={(e) => setDonorContact(e.target.value)}
+                />
 
-			    <button
-				type="submit"
-				className={`${styles.btn} ${styles.btnPrimary}`}
-				disabled={reviewSubmitting}
-			    >
-				{reviewSubmitting ? 'Enviando...' : 'Enviar Avaliação'}
-			    </button>
-			</form>
-		    </div>
-		</div>
+                <div className={styles.donationItemsList}>
+                  {needs.map(need => (
+                    <div key={need.id} className={styles.donationItem}>
+                      <label>{need.item} ({need.quantidade})</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Qtd."
+                        onChange={(e) => handleDonationChange(need.id, e.target.value)}
+                        className={styles.quantityInput}
+                      />
+                    </div>
+                  ))}
+                </div>
 
-		{isModalOpen && (
-		    <div className={styles.modalBackdrop}>
-			<div className={styles.modalContent}>
-			    <h2>Registrar Doação de Itens</h2>
-			    <p>Preencha seu nome, contato e a quantidade dos itens que você deseja doar.</p>
+                {submitError && <p className={styles.errorMsg}>{submitError}</p>}
 
-			    <form onSubmit={handleConfirmDonation} className={styles.donationForm}>
-				<input
-				    type="text"
-				    placeholder="Seu nome completo *"
-				    value={donorName}
-				    onChange={(e) => setDonorName(e.target.value)}
-				    required
-				/>
-				<input
-				    type="text"
-				    placeholder="Seu e-mail ou telefone (opcional)"
-				    value={donorContact}
-				    onChange={(e) => setDonorContact(e.target.value)}
-				/>
+                <div className={styles.modalActions}>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className={styles.btnSecondary}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className={styles.btnPrimary} disabled={submitting}>
+                    {submitting ? 'Registrando...' : 'Confirmar Doação'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
-				<div className={styles.donationItemsList}>
-				    {needs.map(need => (
-					<div key={need.id} className={styles.donationItem}>
-					    <label>{need.item} ({need.quantidade})</label>
-					    <input
-						type="number"
-						min="0"
-						placeholder="Qtd."
-						onChange={(e) => handleDonationChange(need.id, e.target.value)}
-						className={styles.quantityInput}
-					    />
-					</div>
-				    ))}
-				</div>
-
-				{submitError && <p className={styles.errorMsg}>{submitError}</p>}
-
-				<div className={styles.modalActions}>
-				    <button type="button" onClick={() => setIsModalOpen(false)} className={styles.btnSecondary}>
-					Cancelar
-				    </button>
-				    <button type="submit" className={styles.btnPrimary} disabled={submitting}>
-					{submitting ? 'Registrando...' : 'Confirmar Doação'}
-				    </button>
-				</div>
-			    </form>
-			</div>
-		    </div>
-		)}
-
-		<div className={styles.card}>
-		    <h2>Doações Recebidas</h2>
-		    {donationsList.length > 0 ? (
-			<ul className={styles.donationsList}>
-			    {donationsList.map(donation => (
-				<li key={donation.id} className={styles.donationListItem}>
-				    <div className={styles.donationInfo}>
-					<span className={styles.donorName}>{donation.doador_nome}</span>
-					<span> doou </span>
-					<span className={styles.donationQuantity}>
-					    {donation.quantidade_doada}x {donation.item_nome}
-					</span>
-				    </div>
-				    <span className={styles.donationDate}>
-					{new Date(donation.data_doacao).toLocaleDateString('pt-BR')}
-				    </span>
-				</li>
-			    ))}
-			</ul>
-		    ) : (
-			<p>Este abrigo ainda não registrou doações. Seja o primeiro!</p>
-		    )}
-		</div>
-
-	    </main>
-	</div>
-    );
-
+      </main>
+    </div>
+  );
 }
