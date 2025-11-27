@@ -6,6 +6,39 @@ import dynamic from 'next/dynamic';
 import Header from '../../components/Header';
 import styles from '../../styles/ShelterDetailsUser.module.css';
 
+const StarRating = ({ rating, onRatingChange, className }) => {
+    const [hover, setHover] = useState(0);
+
+    return (
+        <div className={className}>
+            {[...Array(5)].map((_, index) => {
+                const ratingValue = index + 1;
+                return (
+                    <label key={index}>
+                        <input
+                            type="radio"
+                            name="rating"
+                            value={ratingValue}
+                            onClick={() => onRatingChange(ratingValue)}
+                            style={{ display: 'none' }} // Hide radio button
+                        />
+                        <span
+                            className={styles.star}
+                            style={{
+                                color: ratingValue <= (hover || rating) ? "#ffc107" : "#e4e5e9"
+                            }}
+                            onMouseEnter={() => setHover(ratingValue)}
+                            onMouseLeave={() => setHover(0)}
+                        >
+                            &#9733; {/* Unicode star character */}
+                        </span>
+                    </label>
+                );
+            })}
+        </div>
+    );
+};
+
 const Map = dynamic(() => import('../../components/Map'), {
     ssr: false,
     loading: () => <div className={styles.loadingMap}>Carregando mapa...</div>
@@ -334,8 +367,6 @@ export default function ShelterDetail() {
 		    )}
 		</div>
 
-
-
 		<div className={styles.card}>
 		    <h2>Avaliações</h2>
 
@@ -344,7 +375,6 @@ export default function ShelterDetail() {
 			distribution={calculateReviewDistribution(reviews)}
 			averageRating={shelter.media_avaliacoes ? Number(shelter.media_avaliacoes).toFixed(1) : '0.0'}
 		    />
-
 
 		    <div className={styles.reviewsList}>
 			{reviews.map(review => (
@@ -359,7 +389,6 @@ export default function ShelterDetail() {
 			    </div>
 			))}
 		    </div>
-
 		    <div className={styles.reviewFormSection}>
 			<h3>Deixe sua Avaliação</h3>
 
@@ -369,21 +398,12 @@ export default function ShelterDetail() {
 			<form onSubmit={handleSubmitReview} className={styles.reviewForm}>
 
 			    <div className={styles.formGroup}>
-				<label>Sua Nota:</label>
-				<select
-				    value={reviewData.nota}
-				    onChange={(e) => setReviewData({ ...reviewData, nota: parseInt(e.target.value) })}
-				    className={styles.ratingSelect}
-				    required
-				>
-				    <option value={5}>5 Estrelas - Excelente</option>
-				    <option value={4}>4 Estrelas - Muito Bom</option>
-				    <option value={3}>3 Estrelas - Bom</option>
-				    <option value={2}>2 Estrelas - Regular</option>
-				    <option value={1}>1 Estrela - Ruim</option>
-				</select>
+				<StarRating
+				    rating={reviewData.nota}
+				    onRatingChange={(newRating) => setReviewData({ ...reviewData, nota: newRating })}
+				    className={styles.starRatingContainer} // Use this class for styling
+				/>
 			    </div>
-
 			    <div className={styles.formGroup}>
 				<label>Comentário (Opcional):</label>
 				<textarea
