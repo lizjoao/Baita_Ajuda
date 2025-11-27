@@ -184,7 +184,7 @@ app.post('/api/abrigos', async (req, res) => {
 
     if (tipo_abrigo && Array.isArray(tipo_abrigo)) {
       const validTypes = ['Pets', 'Feminino', 'Masculino'];
-      
+
       // Validar tipos
       const invalidTypes = tipo_abrigo.filter(type => !validTypes.includes(type));
       if (invalidTypes.length > 0) {
@@ -209,7 +209,7 @@ app.post('/api/abrigos', async (req, res) => {
     if (columns.includes('aceita_pets')) {
       // Newer schema: supports aceita_pets, tipo_feminino, tipo_masculino, formulario_inscricao_url
       insertResult = await pool.query(
-        `INSERT INTO abrigos (usuario_id, nome, endereco, aceita_pets, tipo_feminino, tipo_masculino, vagas_disponiveis, formulario_inscricao_url, ativo) 
+        `INSERT INTO abrigos (usuario_id, nome, endereco, aceita_pets, tipo_feminino, tipo_masculino, vagas_disponiveis, formulario_inscricao_url, ativo)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true) RETURNING *`,
         [usuario_id, cleanNome, cleanEndereco, flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino, spots, cleanUrl]
       );
@@ -263,14 +263,14 @@ app.get('/api/abrigos', async (req, res) => {
     if (lat && lng) {
       const latitude = parseFloat(lat);
       const longitude = parseFloat(lng);
-      
+
       if (!isNaN(latitude) && !isNaN(longitude)) {
-        selectClause += `, 
+        selectClause += `,
           (6371 * acos(
-            cos(radians(${latitude})) * 
-            cos(radians(COALESCE(a.latitude, -30.0346))) * 
-            cos(radians(COALESCE(a.longitude, -51.2177)) - radians(${longitude})) + 
-            sin(radians(${latitude})) * 
+            cos(radians(${latitude})) *
+            cos(radians(COALESCE(a.latitude, -30.0346))) *
+            cos(radians(COALESCE(a.longitude, -51.2177)) - radians(${longitude})) +
+            sin(radians(${latitude})) *
             sin(radians(COALESCE(a.latitude, -30.0346)))
           )) * 1000 as distance_meters`;
       }
@@ -421,6 +421,71 @@ app.get('/api/abrigos/:id/avaliacoes', async (req, res) => {
 
   } catch (error) {
     handleError(res, error, 'Failed to fetch shelter reviews');
+  }
+});
+app.post('/api/abrigos/:id/avaliacoes', async (req, res) => {
+  try {
+    const { id: abrigo_id } = req.params;
+    const { usuario_id, nota, comentario, anonimo } = req.body;
+
+    console.log(`=== SUBMIT REVIEW for Abrigo ${abrigo_id} ===`);
+
+    // 1. Basic Validation
+    const validation = validateFields(req.body, ['nota']);
+    if (validation) return badRequest(res, 'Missing required fields: nota');
+
+    const score = parseInt(nota);
+    if (isNaN(score) || score < 1 || score > 5) {
+      return badRequest(res, 'Nota must be an integer between 1 and 5');
+    }
+
+    // 2. Check if the shelter exists
+    const shelterExists = await pool.query(
+      'SELECT id FROM Abrigos WHERE id = $1 AND ativo = true',
+      [abrigo_id]
+    );
+
+    if (shelterExists.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
+    }
+
+    // 3. Optional User and Anonymity Checks
+    // Ensure usuario_id is NULL if the review is anonymous or no user is logged in
+    const final_usuario_id = anonimo === true ? null : (usuario_id || null);
+    const final_anonimo = anonimo === true;
+
+    // 4. Insert Review
+    const insertQuery = `
+      INSERT INTO avaliacoes (abrigo_id, usuario_id, nota, comentario, anonimo)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `;
+
+    const result = await pool.query(insertQuery, [
+      abrigo_id,
+      final_usuario_id,
+      score,
+      comentario ? comentario.trim() : null,
+      final_anonimo
+    ]);
+
+    // 5. Calculate New Average Rating (Optional, but highly recommended for prompt feedback)
+    const avgResult = await pool.query(
+      'SELECT AVG(nota) AS media_avaliacoes FROM avaliacoes WHERE abrigo_id = $1',
+      [abrigo_id]
+    );
+    const newAverage = avgResult.rows[0].media_avaliacoes;
+
+    // 6. Respond
+    console.log(`Review added for Abrigo ${abrigo_id}. New avg: ${newAverage}`);
+    res.status(201).json({
+      success: true,
+      avaliacao: result.rows[0],
+      new_average: Number(newAverage).toFixed(1)
+    });
+
+  } catch (error) {
+    handleError(res, error, 'Failed to submit review');
   }
 });
 

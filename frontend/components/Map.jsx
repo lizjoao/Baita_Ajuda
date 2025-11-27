@@ -62,9 +62,9 @@ const Map = ({ shelters = [] }) => {
         shelters.forEach((shelter, index) => {
           const lat = shelter.latitude || shelter.lat || (-30.0346 + (Math.random() - 0.5) * 0.1);
           const lng = shelter.longitude || shelter.lng || (-51.2177 + (Math.random() - 0.5) * 0.1);
-          
+
           const color = COLORS[index % COLORS.length];
-          
+
           const icon = L.divIcon({
             html: `<div role="button" aria-label="Abrigo ${shelter.nome}" style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer;"></div>`,
             className: 'custom-marker',
@@ -104,12 +104,16 @@ const Map = ({ shelters = [] }) => {
         });
 
         // Ajustar zoom para mostrar todos os marcadores
-        if (markers.length > 1) {
-          const group = new L.featureGroup(markers);
-          map.fitBounds(group.getBounds().pad(0.1));
-        }
+	  if (markers.length === 1) {
+	      const marker = markers[0];
+	      const latLng = marker.getLatLng();
 
-        // Aguardar renderização e ajustar tamanho
+	      map.setView(latLng, 16);
+	  } else if (markers.length > 1) {
+	      const group = new L.featureGroup(markers);
+	      map.fitBounds(group.getBounds().pad(0.1));
+	  }
+
         setTimeout(() => {
           if (isMounted && mapInstanceRef.current) {
             try {
@@ -140,15 +144,15 @@ const Map = ({ shelters = [] }) => {
   }, [shelters]);
 
   return (
-    <div 
+    <div
       ref={mapRef}
-      style={{ 
-        height: '100%', 
+      style={{
+        height: '100%',
         width: '100%',
         minHeight: '400px',
         background: '#e5e3df',
         borderRadius: '12px'
-      }} 
+      }}
     />
   );
 };

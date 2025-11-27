@@ -2,7 +2,85 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import styles from '../../styles/ShelterDetailsUser.module.css'; // We will create this CSS file
+import dynamic from 'next/dynamic';
+import Header from '../../components/Header';
+import styles from '../../styles/ShelterDetailsUser.module.css';
+
+const Map = dynamic(() => import('../../components/Map'), {
+    ssr: false,
+    loading: () => <div className={styles.loadingMap}>Carregando mapa...</div>
+});
+
+function ReviewDistribution({ totalReviews, distribution, averageRating }) {
+
+    const displayDistribution = totalReviews > 0 ? distribution : [
+        { stars: 5, count: 0, percentage: 0 },
+        { stars: 4, count: 0, percentage: 0 },
+        { stars: 3, count: 0, percentage: 0 },
+        { stars: 2, count: 0, percentage: 0 },
+        { stars: 1, count: 0, percentage: 0 },
+    ];
+
+    return (
+        <div className={styles.reviewDistribution}>
+            <h3>{averageRating} de 5 ⭐</h3>
+            <p className={styles.totalReviewsText}>
+                {totalReviews} avaliações globais
+            </p>
+
+            <div className={styles.barsContainer}>
+                {displayDistribution.map(({ stars, count, percentage }) => (
+                    <div key={stars} className={styles.barRow}>
+                        <span className={styles.starLabel}>{stars} estrelas</span>
+                        <div className={styles.barWrapper}>
+                            {/* The width will be 0% if totalReviews is 0 */}
+                            <div className={styles.progressBar} style={{ width: `${percentage}%` }}></div>
+                        </div>
+                        <span className={styles.percentageLabel}>{percentage}%</span>
+                    </div>
+                ))}
+            </div>
+
+            {/* Optionally add a message if there are no reviews */}
+            {totalReviews === 0 && (
+                <p className={styles.noReviewsMessage}>Seja o primeiro a avaliar este abrigo!</p>
+            )}
+
+        </div>
+    );
+}
+
+const calculateReviewDistribution = (reviews) => {
+    const totalReviews = reviews.length;
+
+    // Initialize counts for stars 1 through 5
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+
+    // 1. Calculate raw counts
+    reviews.forEach(review => {
+        const rating = Math.round(review.nota); // Assuming 'nota' is the rating (e.g., 5, 4, 3, etc.)
+        if (rating >= 1 && rating <= 5) {
+            counts[rating]++;
+        }
+    });
+
+    // 2. Calculate percentages and format the final array
+    const distribution = [5, 4, 3, 2, 1].map(stars => {
+        const count = counts[stars];
+        // Calculate percentage, handling division by zero if totalReviews is 0
+        const percentage = totalReviews > 0
+            ? Math.round((count / totalReviews) * 100)
+            : 0;
+
+        return {
+            stars: stars,
+            count: count,
+            percentage: percentage,
+        };
+    });
+
+    return distribution;
+};
 
 export default function ShelterDetail() {
 
@@ -11,9 +89,14 @@ export default function ShelterDetail() {
 
     const [shelter, setShelter] = useState(null);
     const [needs, setNeeds] = useState([]);
-    const [reviews, setReviews] = useState([]); // ✨ Add state for reviews
+    const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const [reviewData, setReviewData] = useState({ nota: 5, comentario: '', anonimo: false });
+    const [reviewSubmitting, setReviewSubmitting] = useState(false);
+    const [reviewError, setReviewError] = useState(null);
+    const [reviewSuccess, setReviewSuccess] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [donations, setDonations] = useState({}); // e.g., { need_id_1: 5, need_id_2: 10 }
@@ -23,6 +106,51 @@ export default function ShelterDetail() {
     const [submitError, setSubmitError] = useState(null);
 
     const [donationsList, setDonationsList] = useState([]);
+
+
+    const handleSubmitReview = async (e) => {
+	e.preventDefault();
+	setReviewSubmitting(true);
+	setReviewError(null);
+	setReviewSuccess(false);
+
+	try {
+            const payload = {
+		...reviewData,
+		// You should add the user's ID here if they are logged in and the review is not anonymous.
+		// usuario_id: user?.id,
+            };
+
+            const response = await fetch(`http://localhost:5000/api/abrigos/${id}/avaliacoes`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+		throw new Error(data.error || 'Falha ao enviar avaliação.');
+            }
+
+            // 💡 Success: Update the local reviews list and reset the form
+            // Re-fetch reviews to get the updated list and recalculate distribution
+            // (You should replace this simplified logic with a dedicated refresh function if you have one)
+            const updatedReviewsRes = await fetch(`http://localhost:5000/api/abrigos/${id}/avaliacoes`);
+            const updatedReviewsData = await updatedReviewsRes.json();
+            setReviews(updatedReviewsData.avaliacoes);
+
+            setReviewData({ nota: 5, comentario: '', anonimo: false }); // Reset form
+            setReviewSuccess(true);
+
+	} catch (err) {
+            console.error("Review submission error:", err);
+            setReviewError(err.message || 'Erro desconhecido ao avaliar.');
+	} finally {
+            setReviewSubmitting(false);
+	}
+    };
+
 
     useEffect(() => {
 	if (!id) return;
@@ -128,36 +256,52 @@ export default function ShelterDetail() {
 
     return (
 	<div className={styles.container}>
+			<Header />
 	    <main className={styles.main}>
-		<header className={styles.header}>
-		    <Link href="/" className={styles.backLink}>Voltar</Link>
-		</header>
 
 		{/* --- Informações do Abrigo Card --- */}
-		<div className={`${styles.card} ${styles.infoCard}`}>
-		    <h1>{shelter.nome}</h1>
-		    <div className={styles.infoGrid}>
-			<div className={styles.infoBlock}>
-			    <h3>Endereço:</h3>
-			    <p>{shelter.endereco}</p>
-			</div>
-			<div className={styles.infoBlock}>
-			    <h3>Avaliação:</h3>
-			    <p>{Number(shelter.media_avaliacoes).toFixed(1)} ⭐</p>
-			</div>
-			<div className={styles.infoBlock}>
-			    <h3>Aceita:</h3>
-			    <div className={styles.tags}>
-				{shelter.aceita_pets && <span>Pets</span>}
-				{shelter.tipo_feminino && <span>Feminino</span>}
-				{shelter.tipo_masculino && <span>Masculino</span>}
+		<div className={styles.infoMapWrapper}>
+		    <div className={`${styles.card} ${styles.infoCard}`}>
+			<h1>{shelter.nome}</h1>
+			<div className={styles.infoGrid}>
+			    <div className={styles.infoBlock}>
+				<h3>Endereço:</h3>
+				<p>{shelter.endereco}</p>
+			    </div>
+			    <div className={styles.infoBlock}>
+				<h3>Avaliação:</h3>
+				<p>
+				    {shelter.media_avaliacoes ? Number(shelter.media_avaliacoes).toFixed(1) : '0.0'} ⭐
+
+				    <span className={styles.reviewCount}>
+					 ({reviews.length} avaliações)
+				    </span>
+				</p>
+			    </div>
+			    <div className={styles.infoBlock}>
+				<h3>Aceita:</h3>
+				<div className={styles.tags}>
+				    {shelter.aceita_pets && <span>Pets</span>}
+				    {shelter.tipo_feminino && <span>Feminino</span>}
+				    {shelter.tipo_masculino && <span>Masculino</span>}
+				</div>
+			    </div>
+			    <div className={styles.infoBlock}>
+				<h3>Vagas:</h3>
+				<p>{shelter.vagas_disponiveis}</p>
 			    </div>
 			</div>
-			<div className={styles.infoBlock}>
-			    <h3>Vagas:</h3>
-			    <p>{shelter.vagas_disponiveis}</p>
-			</div>
 		    </div>
+		    <section className={`${styles.card} ${styles.mapCard}`}>
+			<h2 className={styles.mapTitle}>Localização no mapa</h2>
+			<div className={styles.mapContainer}>
+			    {shelter.latitude && shelter.longitude ? (
+				<Map shelters={[shelter]} />
+			    ) : (
+				<p className={styles.noMapData}>Localização do mapa indisponível.</p>
+			    )}
+			</div>
+		    </section>
 		</div>
 
 		{/* --- Necessidades do Abrigo Card --- */}
@@ -181,25 +325,86 @@ export default function ShelterDetail() {
 		    )}
 		</div>
 
+
+
 		<div className={styles.card}>
 		    <h2>Avaliações</h2>
-		    {reviews.length > 0 ? (
-			<div className={styles.reviewsList}>
-			    {reviews.map(review => (
-				<div key={review.id} className={styles.reviewItem}>
-				    <div className={styles.reviewHeader}>
-					<span className={styles.reviewRating}>{renderStars(review.nota)}</span>
-					<span className={styles.reviewDate}>
-					    {new Date(review.data_avaliacao).toLocaleDateString('pt-BR')}
-					</span>
-				    </div>
-				    <p className={styles.reviewComment}>{review.comentario}</p>
+
+		    <ReviewDistribution
+			totalReviews={reviews.length}
+			distribution={calculateReviewDistribution(reviews)}
+			averageRating={shelter.media_avaliacoes ? Number(shelter.media_avaliacoes).toFixed(1) : '0.0'}
+		    />
+
+
+		    <div className={styles.reviewsList}>
+			{reviews.map(review => (
+			    <div key={review.id} className={styles.reviewItem}>
+				<div className={styles.reviewHeader}>
+				    <span className={styles.reviewRating}>{renderStars(review.nota)}</span>
+				    <span className={styles.reviewDate}>
+					{new Date(review.data_avaliacao).toLocaleDateString('pt-BR')}
+				    </span>
 				</div>
-			    ))}
-			</div>
-		    ) : (
-			<p>Este abrigo ainda não possui avaliações.</p>
-		    )}
+				<p className={styles.reviewComment}>{review.comentario}</p>
+			    </div>
+			))}
+		    </div>
+
+		    <div className={styles.reviewFormSection}>
+			<h3>Deixe sua Avaliação</h3>
+
+			{reviewError && <p className={styles.errorMsg}>{reviewError}</p>}
+			{reviewSuccess && <p className={styles.successMsg}>Avaliação enviada com sucesso! Obrigado!</p>}
+
+			<form onSubmit={handleSubmitReview} className={styles.reviewForm}>
+
+			    <div className={styles.formGroup}>
+				<label>Sua Nota:</label>
+				<select
+				    value={reviewData.nota}
+				    onChange={(e) => setReviewData({ ...reviewData, nota: parseInt(e.target.value) })}
+				    className={styles.ratingSelect}
+				    required
+				>
+				    <option value={5}>5 Estrelas - Excelente</option>
+				    <option value={4}>4 Estrelas - Muito Bom</option>
+				    <option value={3}>3 Estrelas - Bom</option>
+				    <option value={2}>2 Estrelas - Regular</option>
+				    <option value={1}>1 Estrela - Ruim</option>
+				</select>
+			    </div>
+
+			    <div className={styles.formGroup}>
+				<label>Comentário (Opcional):</label>
+				<textarea
+				    rows="3"
+				    value={reviewData.comentario}
+				    onChange={(e) => setReviewData({ ...reviewData, comentario: e.target.value })}
+				    placeholder="Conte sua experiência..."
+				    className={styles.commentTextarea}
+				/>
+			    </div>
+
+			    <div className={styles.checkboxGroup}>
+				<input
+				    type="checkbox"
+				    id="anonimo"
+				    checked={reviewData.anonimo}
+				    onChange={(e) => setReviewData({ ...reviewData, anonimo: e.target.checked })}
+				/>
+				<label htmlFor="anonimo">Avaliar anonimamente</label>
+			    </div>
+
+			    <button
+				type="submit"
+				className={`${styles.btn} ${styles.btnPrimary}`}
+				disabled={reviewSubmitting}
+			    >
+				{reviewSubmitting ? 'Enviando...' : 'Enviar Avaliação'}
+			    </button>
+			</form>
+		    </div>
 		</div>
 
 		{isModalOpen && (
