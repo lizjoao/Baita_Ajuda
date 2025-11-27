@@ -5,26 +5,43 @@
   background: var(--gray-50);
 }
 
-/* Main Content */
+/* Main Content agora é o container Grid */
 .main {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0;
+  margin: 0;
   width: 100%;
   flex: 1;
+
+  /* 💡 Layout Grid para dividir ListCatalog e Mapa */
+  display: grid;
+  /* Colunas: 1ª coluna fixa para a lista (350px a 450px), 2ª coluna preenche o restante */
+  grid-template-columns: minmax(350px, 450px) 1fr;
+  grid-template-rows: 100vh; /* Ocupa a altura total do viewport */
+  overflow: hidden;
 }
 
-/* Filtros */
+/* 💡 NOVA SEÇÃO: Coluna da Lista (Scrollable List Catalog - Lado Esquerdo) */
+.listCatalog {
+    grid-column: 1 / 2; /* Ocupa a primeira coluna */
+    height: 100%;
+    overflow-y: auto; /* Permite scroll na lista */
+    background: var(--gray-50);
+    z-index: 10;
+    padding: 2rem 1.5rem; /* Padding interno */
+}
+
+/* Filtros (Estilos internos - mantidos) */
 .filterContainer {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1.5rem; /* Reduzido de 2rem para 1.5rem */
   flex-wrap: wrap;
   align-items: center;
   background: var(--white);
   padding: 1.5rem;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+  width: 100%;
+  margin-bottom: 1.5rem; /* Espaçamento entre filtros e lista */
 }
 
 .searchInput,
@@ -103,25 +120,33 @@
   transform: translateY(0);
 }
 
-/* Seção de Abrigos (agora usada para o mapa) */
-.shelterSection {
-  margin-bottom: 0; /* Removido margem inferior */
+/* 💡 NOVA SEÇÃO: Container do Mapa (Right Column) */
+.mapWrapper {
+    grid-column: 2 / -1; /* Ocupa a segunda coluna */
+    position: relative;
+    width: 100%;
+    height: 100%;
 }
 
-.shelterSection h2 {
-  margin: 0 0 1rem 0; /* Reduzido de 1.5rem para 1rem */
-  color: var(--gray-800);
-  font-size: 1.8rem;
-  font-weight: 700;
+.shelterListDisplay {
+    margin-top: 1.5rem;
 }
 
-.errorMsg {
-  color: var(--danger-color);
-  padding: 1rem 1.5rem;
-  background: rgba(220, 53, 69, 0.1);
-  border-left: 4px solid var(--danger-color);
-  border-radius: var(--radius-md);
-  margin-bottom: 1rem;
+.shelterListDisplay h2 {
+    margin: 0 0 1rem 0;
+    color: var(--gray-800);
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.mapContainer {
+  /* O Mapa deve preencher totalmente o mapWrapper */
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--gray-200);
+  border: none;
 }
 
 .loading {
@@ -133,29 +158,43 @@
   font-size: 1.1rem;
 }
 
-/* Seção do Mapa */
-.mapContainer {
-  width: 100%;
-  height: 650px; /* Aumentado de 600px para 650px */
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  background: var(--gray-200);
-  border: 2px solid var(--gray-200);
+.errorMsg {
+  color: var(--danger-color);
+  padding: 1rem 1.5rem;
+  background: rgba(220, 53, 69, 0.1);
+  border-left: 4px solid var(--danger-color);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
 }
 
+
 /* Responsivo */
-@media (max-width: 1024px) {
-  .filterContainer {
-    gap: 0.75rem;
+@media (max-width: 900px) {
+  .main {
+    /* Stack elements vertically for smaller screens */
+    grid-template-columns: 1fr;
+    grid-template-rows: 50vh auto; /* Mapa toma 50vh, lista é rolada abaixo */
+    height: auto;
+    overflow-y: visible;
+    padding: 0;
+  }
+
+  .listCatalog {
+    grid-row: 2; /* Lista abaixo do mapa */
+    height: auto;
+    padding: 1rem;
+  }
+
+  .mapWrapper {
+    grid-row: 1; /* Mapa no topo */
+  }
+
+  .mapContainer {
+    height: 100%; /* Preenche o 50vh container */
   }
 }
 
 @media (max-width: 768px) {
-  .main {
-    padding: 1rem;
-  }
-
   .filterContainer {
     flex-direction: column;
     align-items: stretch;
@@ -168,13 +207,5 @@
   .checkboxLabel,
   .distanceButton {
     width: 100%;
-  }
-
-  .mapContainer {
-    height: 500px; /* Ajustado para mobile */
-  }
-
-  .shelterSection h2 {
-    font-size: 1.5rem;
   }
 }

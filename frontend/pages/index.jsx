@@ -27,9 +27,9 @@ export default function Home() {
 
     useEffect(() => {
         if (sortByDistance && !userLocation) return
-        
+
         const params = new URLSearchParams()
-        
+
         if (searchTerm) params.append('search', searchTerm)
         if (minVagas) params.append('min_vagas', minVagas)
         if (filters.feminino) params.append('tipo_feminino', 'true')
@@ -90,47 +90,73 @@ export default function Home() {
             <Header />
 
             <main className={styles.main}>
-                {/* Filtros */}
-                <div className={styles.filterContainer}>
-                    <input
-                        type="text"
-                        placeholder="Nome ou endereço..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className={styles.searchInput}
-                    />
-                    <input
-                        type="number"
-                        placeholder="Vagas mínimas"
-                        value={minVagas}
-                        onChange={(e) => setMinVagas(e.target.value)}
-                        className={styles.vagasInput}
-                    />
-                    {Object.keys(FILTER_LABELS).map(filter => (
-                        <label key={filter} className={styles.checkboxLabel}>
-                            <input
-                                type="checkbox"
-                                checked={filters[filter]}
-                                onChange={() => handleFilterChange(filter)}
-                            />
-                            <span>{FILTER_LABELS[filter]}</span>
-                        </label>
-                    ))}
-                    <button onClick={handleSortByDistance} className={styles.distanceButton}>
-                        {sortByDistance ? 'Limpar Ordenação' : 'Ordenar por Proximidade'}
-                    </button>
+
+                {/* 💡 LEFT COLUMN: Scrollable List Catalog (Filters + Shelters List) */}
+                <div className={styles.listCatalog}>
+
+                    {/* Filtros */}
+                    <div className={styles.filterContainer}>
+                        <input
+                            type="text"
+                            placeholder="Nome ou endereço..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className={styles.searchInput}
+                        />
+                        <input
+                            type="number"
+                            placeholder="Vagas mínimas"
+                            value={minVagas}
+                            onChange={(e) => setMinVagas(e.target.value)}
+                            className={styles.vagasInput}
+                        />
+                        {Object.keys(FILTER_LABELS).map(filter => (
+                            <label key={filter} className={styles.checkboxLabel}>
+                                <input
+                                    type="checkbox"
+                                    checked={filters[filter]}
+                                    onChange={() => handleFilterChange(filter)}
+                                />
+                                <span>{FILTER_LABELS[filter]}</span>
+                            </label>
+                        ))}
+                        <button onClick={handleSortByDistance} className={styles.distanceButton}>
+                            {sortByDistance ? 'Limpar Ordenação' : 'Ordenar por Proximidade'}
+                        </button>
+                    </div>
+
+                    {/* Shelters List Display */}
+                    <section className={styles.shelterListDisplay}>
+                        <h2>Mapa de Abrigos ({shelters.length})</h2>
+                        {error && <p className={styles.errorMsg}>{error}</p>}
+
+                        {/* 💡 Implementação da Lista de Abrigos */}
+                        {loading && <p className={styles.loading}>Buscando abrigos...</p>}
+
+                        {!loading && shelters.length > 0 && (
+                            <div className={styles.sheltersGrid}>
+                                {shelters.map(shelter => (
+                                    <div key={shelter.id} className={styles.shelterCard}>
+                                        {/* Placeholder para o conteúdo real do card */}
+                                        <h3>{shelter.nome}</h3>
+                                        <p>{shelter.endereco}</p>
+                                        <p>Vagas: {shelter.vagas_disponiveis}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {!loading && shelters.length === 0 && !error && (
+                            <p>Nenhum abrigo encontrado com os filtros aplicados.</p>
+                        )}
+                    </section>
+
                 </div>
 
-                {/* Mapa */}
-                <section className={styles.mapSection}>
-                    <h2>Mapa de Abrigos</h2>
-                    {error && <p className={styles.errorMsg}>{error}</p>}
+                {/* 💡 RIGHT COLUMN: Full Map Background */}
+                <section className={styles.mapWrapper}>
+                    {/* O componente Map sempre preenche este wrapper */}
                     <div className={styles.mapContainer}>
-                        {loading ? (
-                            <p className={styles.loading}>Carregando mapa...</p>
-                        ) : (
-                            <Map shelters={shelters} />
-                        )}
+                        <Map shelters={shelters} />
                     </div>
                 </section>
             </main>
