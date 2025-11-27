@@ -30,6 +30,7 @@ CREATE TABLE abrigos (
     tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('temporario', 'permanente', 'emergencia')),
     capacidade_total INTEGER NOT NULL,
     vagas_disponiveis INTEGER NOT NULL,
+    formulario_inscricao_url VARCHAR(255),
     contato_responsavel VARCHAR(100),
     telefone VARCHAR(20),
     email VARCHAR(100),
