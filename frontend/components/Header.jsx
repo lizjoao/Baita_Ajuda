@@ -24,12 +24,6 @@ export default function Header() {
           <Link href="/register" className={getLinkClass('/register')}>
             Registrar
           </Link>
-          <Link 
-            href="/add-shelter" 
-            className={`${getLinkClass('/add-shelter')} ${styles.navLinkPrimary}`}
-          >
-            Adicionar Abrigo
-          </Link>
           <Link href="/manage-shelters" className={getLinkClass('/manage-shelters')}>
             Gerenciar Abrigos
           </Link>
