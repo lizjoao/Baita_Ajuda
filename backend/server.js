@@ -75,13 +75,29 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(senha, 12);
-    const result = await pool.query(
-      'INSERT INTO Usuarios (nome, email, senha_hash) VALUES ($1, $2, $3) RETURNING id, nome, email',
-      [nome.trim(), email.toLowerCase().trim(), hashedPassword]
-    );
 
-    console.log('User created:', result.rows[0].email);
-    res.status(201).json({ success: true, user: result.rows[0] });
+    // Detect whether the usuarios table has a coluna 'senha_hash'. If not, fall back to legacy 'senha'.
+    const colRes = await pool.query(
+      "SELECT column_name FROM information_schema.columns WHERE table_name = 'usuarios' AND column_name = 'senha_hash'"
+    );
+    const hasSenhaHash = colRes.rows.length > 0;
+
+    let insertResult;
+    if (hasSenhaHash) {
+      insertResult = await pool.query(
+        'INSERT INTO usuarios (nome, email, senha_hash) VALUES ($1, $2, $3) RETURNING id, nome, email',
+        [nome.trim(), email.toLowerCase().trim(), hashedPassword]
+      );
+    } else {
+      // legacy schema: column is 'senha'
+      insertResult = await pool.query(
+        'INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id, nome, email',
+        [nome.trim(), email.toLowerCase().trim(), hashedPassword]
+      );
+    }
+
+    console.log('User created:', insertResult.rows[0].email);
+    res.status(201).json({ success: true, user: insertResult.rows[0] });
 
   } catch (error) {
     handleError(res, error, 'Registration failed');
@@ -185,15 +201,45 @@ app.post('/api/abrigos', async (req, res) => {
     const cleanNome = nome.trim();
     const cleanEndereco = endereco.trim();
     const cleanUrl = formulario_inscricao_url ? formulario_inscricao_url.trim() : null;
+    // Detect schema differences: older init-db.sql uses different column names
+    const colRes = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'abrigos'");
+    const columns = colRes.rows.map(r => r.column_name);
 
-    const result = await pool.query(
-      `INSERT INTO Abrigos (usuario_id, nome, endereco, aceita_pets, tipo_feminino, tipo_masculino, vagas_disponiveis, formulario_inscricao_url, ativo) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true) RETURNING *`,
-      [usuario_id, cleanNome, cleanEndereco, flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino, spots, cleanUrl]
-    );
+    let insertResult;
+    if (columns.includes('aceita_pets')) {
+      // Newer schema: supports aceita_pets, tipo_feminino, tipo_masculino, formulario_inscricao_url
+      insertResult = await pool.query(
+        `INSERT INTO abrigos (usuario_id, nome, endereco, aceita_pets, tipo_feminino, tipo_masculino, vagas_disponiveis, formulario_inscricao_url, ativo) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true) RETURNING *`,
+        [usuario_id, cleanNome, cleanEndereco, flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino, spots, cleanUrl]
+      );
+    } else {
+      // Legacy schema from init-db.sql: requires latitude, longitude, cidade, estado, tipo, capacidade_total, vagas_disponiveis
+      const latitude = (req.body.latitude !== undefined) ? parseFloat(req.body.latitude) : -30.0346;
+      const longitude = (req.body.longitude !== undefined) ? parseFloat(req.body.longitude) : -51.2177;
+      const cidade = req.body.cidade || 'Porto Alegre';
+      const estado = req.body.estado || 'RS';
+      // Map provided tipo_abrigo to one of legacy allowed types if possible, otherwise default to 'temporario'
+      let tipo = 'temporario';
+      if (Array.isArray(tipo_abrigo) && tipo_abrigo.length > 0) {
+        const lower = tipo_abrigo[0].toString().toLowerCase();
+        if (['temporario','permanente','emergencia'].includes(lower)) tipo = lower;
+      } else if (typeof tipo_abrigo === 'string') {
+        const lower = tipo_abrigo.toLowerCase();
+        if (['temporario','permanente','emergencia'].includes(lower)) tipo = lower;
+      }
+      const capacidade_total = parseInt(req.body.capacidade_total) || spots || 0;
 
-    console.log('Shelter created:', result.rows[0]);
-    res.status(201).json({ success: true, abrigo: result.rows[0] });
+      insertResult = await pool.query(
+        `INSERT INTO abrigos (nome, endereco, latitude, longitude, cidade, estado, tipo, capacidade_total, vagas_disponiveis, contato_responsavel, telefone, email, descricao, infraestrutura, restricoes, horario_funcionamento, ativo, usuario_id, verificado)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,true,$17,false)
+         RETURNING *`,
+        [cleanNome, cleanEndereco, latitude, longitude, cidade, estado, tipo, capacidade_total, spots, null, null, null, null, null, null, null, usuario_id]
+      );
+    }
+
+    console.log('Shelter created:', insertResult.rows[0]);
+    res.status(201).json({ success: true, abrigo: insertResult.rows[0] });
 
   } catch (error) {
     console.error('=== ERRO AO CRIAR ABRIGO ===');
@@ -287,11 +333,25 @@ app.get('/api/abrigos', async (req, res) => {
 
     const result = await pool.query(resultsQuery, params);
 
-    console.log(`Encontrados ${result.rows.length} abrigos`);
+    // Normalize coordinates: support both 'latitude'/'longitude' (legacy) and 'lat'/'lng' (other schemas)
+    const normalizedRows = result.rows.map(r => {
+      const latVal = r.latitude !== undefined && r.latitude !== null ? Number(r.latitude)
+        : (r.lat !== undefined && r.lat !== null ? Number(r.lat) : undefined);
+      const lngVal = r.longitude !== undefined && r.longitude !== null ? Number(r.longitude)
+        : (r.lng !== undefined && r.lng !== null ? Number(r.lng) : undefined);
+
+      return {
+        ...r,
+        lat: latVal,
+        lng: lngVal
+      };
+    });
+
+    console.log(`Encontrados ${normalizedRows.length} abrigos`);
 
     res.json({
       success: true,
-      abrigos: result.rows,
+      abrigos: normalizedRows,
       pagination: {
         currentPage: page,
         totalPages: totalPages,
@@ -655,6 +715,71 @@ app.get('/api/abrigos/:id/doacoes', async (req, res) => {
     } catch (error) {
   handleError(res, error, 'Failed to fetch shelter donations');
     }
+});
+
+// Geocode endpoint (proxy to Nominatim) - to avoid CORS and provide a stable User-Agent/contact
+app.get('/api/geocode', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || !q.toString().trim()) return badRequest(res, 'Query param "q" is required');
+
+    const contact = process.env.GEOCODE_CONTACT_EMAIL || 'dev@local';
+    const defaultCity = process.env.DEFAULT_CITY || 'Porto Alegre';
+    const defaultState = process.env.DEFAULT_STATE || 'RS';
+
+    // Prepare query variations to improve matching for partial addresses
+    const rawQ = q.toString().trim();
+    const queries = [
+      rawQ,
+      `${rawQ}, ${defaultCity}`,
+      `${rawQ}, ${defaultCity}, ${defaultState}`,
+      `${rawQ} ${defaultCity} ${defaultState}`
+    ];
+
+    const fetchOptions = {
+      headers: {
+        'User-Agent': `Baita_Ajuda/1.0 (${contact})`,
+        'Accept-Language': 'pt-BR'
+      }
+    };
+
+    let lastError = null;
+    for (const attemptQ of queries) {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=3&q=${encodeURIComponent(attemptQ)}&countrycodes=br`;
+      try {
+        console.log('[geocode] trying query:', attemptQ);
+        const geoRes = await fetch(nominatimUrl, fetchOptions);
+        console.log('[geocode] response status:', geoRes.status);
+        if (!geoRes.ok) {
+          lastError = `provider returned status ${geoRes.status}`;
+          continue;
+        }
+
+        const geoJson = await geoRes.json();
+        if (Array.isArray(geoJson) && geoJson.length > 0) {
+          // prefer the best match (first), but ensure it has lat/lon
+          const top = geoJson.find(r => r && r.lat && r.lon) || geoJson[0];
+          const lat = top.lat ? parseFloat(top.lat) : null;
+          const lon = top.lon ? parseFloat(top.lon) : null;
+          if (lat !== null && lon !== null) {
+            console.log('[geocode] success for query:', attemptQ, '->', lat, lon);
+            return res.json({ success: true, lat, lon, raw: top });
+          }
+        } else {
+          lastError = 'no results';
+        }
+      } catch (err) {
+        console.error('[geocode] fetch error for query:', attemptQ, err.message);
+        lastError = err.message;
+      }
+    }
+
+    // If we get here, none of the queries returned coordinates
+    console.warn('[geocode] all attempts failed, lastError=', lastError);
+    return res.status(404).json({ success: false, error: 'No results from geocoding', detail: lastError });
+  } catch (error) {
+    handleError(res, error, 'Geocoding failed');
+  }
 });
 
 // 404 handler
