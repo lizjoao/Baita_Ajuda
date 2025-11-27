@@ -7,12 +7,20 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Database configuration - USAR VARIÁVEIS DE AMBIENTE
+// Coerce types to avoid pg errors (password must be a string, port must be a number)
+const dbPassword = process.env.DB_PASSWORD != null ? String(process.env.DB_PASSWORD) : undefined;
+const dbPort = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined;
+
+if (!dbPassword) {
+  console.warn('⚠️  DB_PASSWORD não está definida. Verifique backend/.env');
+}
+
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT
+  password: dbPassword,
+  port: dbPort
 });
 
 // Middleware
@@ -413,12 +421,31 @@ app.get('/api/abrigos/:id/necessidades', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query(
-      'SELECT * FROM Necessidades WHERE abrigo_id = $1 ORDER BY created_at DESC',
-      [id]
-    );
+    // Select columns matching the schema in backend/init-db.sql and alias them to the shape the frontend expects
+    // init-db.sql defines: id, abrigo_id, categoria, item, quantidade_necessaria, unidade, prioridade, descricao, data_solicitacao, atendida
+    const needsQuery = `
+      SELECT id, abrigo_id, categoria, item, quantidade_necessaria AS quantidade, unidade,
+             prioridade AS urgencia, descricao, data_solicitacao
+      FROM necessidades
+      WHERE abrigo_id = $1
+      ORDER BY data_solicitacao DESC
+    `;
 
-    res.json({ success: true, necessidades: result.rows });
+    try {
+      const result = await pool.query(needsQuery, [id]);
+      return res.json({ success: true, necessidades: result.rows });
+    } catch (err) {
+      // fallback: try selecting with id ordering
+      const fallback = `
+        SELECT id, abrigo_id, categoria, item, quantidade_necessaria AS quantidade, unidade,
+               prioridade AS urgencia, descricao
+        FROM necessidades
+        WHERE abrigo_id = $1
+        ORDER BY id DESC
+      `;
+      const result = await pool.query(fallback, [id]);
+      return res.json({ success: true, necessidades: result.rows });
+    }
 
   } catch (error) {
     handleError(res, error, 'Failed to fetch shelter needs');
@@ -443,10 +470,20 @@ app.post('/api/abrigos/:id/necessidades', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
     }
 
-    const result = await pool.query(
-      'INSERT INTO Necessidades (abrigo_id, item, quantidade, urgencia) VALUES ($1, $2, $3, $4) RETURNING *',
-      [id, item.trim(), quantidade.trim(), urgencia || 'media']
-    );
+    // Map frontend fields to DB schema (init-db.sql)
+    // frontend sends: { item, quantidade, urgencia }
+    // DB columns: item, quantidade_necessaria, prioridade, categoria, unidade, descricao
+    const categoria = 'outro';
+    const quantidadeNec = parseInt(String(quantidade).trim()) || null;
+    const prioridade = urgencia || 'media';
+
+    const insertQuery = `
+      INSERT INTO necessidades (abrigo_id, categoria, item, quantidade_necessaria, unidade, prioridade, descricao)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, abrigo_id, categoria, item, quantidade_necessaria AS quantidade, unidade, prioridade AS urgencia, descricao, data_solicitacao
+    `;
+
+    const result = await pool.query(insertQuery, [id, categoria, item.trim(), quantidadeNec, null, prioridade, null]);
 
     console.log('Need added:', result.rows[0].item);
     res.status(201).json({ success: true, necessidade: result.rows[0] });
@@ -465,9 +502,11 @@ app.put('/api/necessidades/:id', async (req, res) => {
     const validation = validateFields(req.body, ['item', 'quantidade']);
     if (validation) return badRequest(res, validation);
 
+    // Update mapping for init-db.sql schema: quantidade_necessaria column
+    const quantidadeNec = parseInt(String(quantidade).trim()) || null;
     const result = await pool.query(
-      'UPDATE Necessidades SET item = $1, quantidade = $2 WHERE id = $3 RETURNING *',
-      [item.trim(), quantidade.trim(), id]
+      `UPDATE necessidades SET item = $1, quantidade_necessaria = $2 WHERE id = $3 RETURNING id, abrigo_id, categoria, item, quantidade_necessaria AS quantidade, unidade, prioridade AS urgencia, descricao, data_solicitacao`,
+      [item.trim(), quantidadeNec, id]
     );
 
     if (result.rows.length === 0) {
@@ -515,6 +554,12 @@ app.post('/api/abrigos/:id/doacoes', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Dados de doação inválidos.' });
     }
 
+    // Determine schema: does doacoes table have necessidade_id column?
+    const colRes = await client.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'doacoes' AND column_name = 'necessidade_id'`
+    );
+    const hasNecessidadeId = colRes.rows.length > 0;
+
     // Use a transaction to ensure all donations are saved together
     await client.query('BEGIN');
 
@@ -524,11 +569,39 @@ app.post('/api/abrigos/:id/doacoes', async (req, res) => {
         throw new Error('Item de doação inválido encontrado.');
       }
 
-      await client.query(
-        `INSERT INTO Doacoes (abrigo_id, necessidade_id, quantidade_doada, doador_nome, doador_contato)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [id, necessidade_id, quantidade, doador_nome, doador_contato]
-      );
+      if (hasNecessidadeId) {
+        // Newer schema: store referência para necessidade
+        await client.query(
+          `INSERT INTO doacoes (abrigo_id, necessidade_id, quantidade_doada, doador_nome, doador_contato)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id, necessidade_id, quantidade, doador_nome, doador_contato]
+        );
+      } else {
+        // Older schema (init-db.sql): doacoes table doesn't link to necessidade_id
+        // Fetch the necessidade to populate item/categoria/unidade
+        const needRes = await client.query(
+          `SELECT item, categoria, unidade FROM necessidades WHERE id = $1`,
+          [necessidade_id]
+        );
+        if (needRes.rows.length === 0) {
+          throw new Error(`Necessidade não encontrada: ${necessidade_id}`);
+        }
+        const need = needRes.rows[0];
+
+        // Map doador_contato to email or telefone when possible
+        let doador_email = null;
+        let doador_telefone = null;
+        if (typeof doador_contato === 'string') {
+          if (doador_contato.includes('@')) doador_email = doador_contato;
+          else doador_telefone = doador_contato;
+        }
+
+        await client.query(
+          `INSERT INTO doacoes (abrigo_id, doador_nome, doador_email, doador_telefone, categoria, item, quantidade, unidade)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [id, doador_nome, doador_email, doador_telefone, need.categoria || 'outro', need.item, quantidade, need.unidade || null]
+        );
+      }
     }
 
     await client.query('COMMIT');
@@ -545,20 +618,35 @@ app.post('/api/abrigos/:id/doacoes', async (req, res) => {
 // GET donations for a specific shelter
 app.get('/api/abrigos/:id/doacoes', async (req, res) => {
     try {
-	const { id } = req.params;
+  const { id } = req.params;
 
-	const result = await pool.query(
-	    `SELECT d.id, d.doador_nome, d.quantidade_doada, d.data_doacao, n.item AS item_nome
-       FROM Doacoes d
-       JOIN Necessidades n ON d.necessidade_id = n.id
-       WHERE d.abrigo_id = $1
-       ORDER BY d.data_doacao DESC`,
-	    [id]
-	);
+  // Check if doacoes table has necessidade_id to decide join strategy
+  const colRes = await pool.query(`SELECT column_name FROM information_schema.columns WHERE table_name = 'doacoes' AND column_name = 'necessidade_id'`);
+  const hasNecessidadeId = colRes.rows.length > 0;
 
-	res.json({ success: true, doacoes: result.rows });
+  if (hasNecessidadeId) {
+    const result = await pool.query(
+        `SELECT d.id, d.doador_nome, d.quantidade_doada, d.data_doacao, n.item AS item_nome
+         FROM doacoes d
+         JOIN necessidades n ON d.necessidade_id = n.id
+         WHERE d.abrigo_id = $1
+         ORDER BY d.data_doacao DESC`,
+      [id]
+    );
+    return res.json({ success: true, doacoes: result.rows });
+  } else {
+    // Legacy schema: doacoes stores item and quantidade directly
+    const result = await pool.query(
+      `SELECT id, doador_nome, quantidade as quantidade_doada, data_doacao, item as item_nome
+       FROM doacoes
+       WHERE abrigo_id = $1
+       ORDER BY data_doacao DESC`,
+      [id]
+    );
+    return res.json({ success: true, doacoes: result.rows });
+  }
     } catch (error) {
-	handleError(res, error, 'Failed to fetch shelter donations');
+  handleError(res, error, 'Failed to fetch shelter donations');
     }
 });
 

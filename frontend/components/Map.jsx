@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 
 const colors = ['#00FFCC', '#FF0099', '#FF3300', '#FF9933', '#33CCFF', '#33FF33', '#6600FF', '#FFFF00'];
 const COLORS = ['#667eea', '#764ba2', '#00FFCC']; // 3 cores suficientes
@@ -6,6 +7,7 @@ const COLORS = ['#667eea', '#764ba2', '#00FFCC']; // 3 cores suficientes
 const Map = ({ shelters = [] }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const router = useRouter();
 
   useEffect(() => {
     // Só executar no cliente
@@ -64,7 +66,7 @@ const Map = ({ shelters = [] }) => {
           const color = COLORS[index % COLORS.length];
           
           const icon = L.divIcon({
-            html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+            html: `<div role="button" aria-label="Abrigo ${shelter.nome}" style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer;"></div>`,
             className: 'custom-marker',
             iconSize: [24, 24],
             iconAnchor: [12, 12],
@@ -83,6 +85,20 @@ const Map = ({ shelters = [] }) => {
               </div>
             `)
             .addTo(map);
+
+          // Ao clicar no marcador, navegar para a página pública de detalhes/doações
+          try {
+            if (shelter && (shelter.id || shelter._id)) {
+              const shelterId = shelter.id || shelter._id;
+              marker.on('click', () => {
+                // Usamos router.push para navegar sem recarregar a página
+                router.push(`/shelters/${shelterId}`);
+              });
+            }
+          } catch (e) {
+            // não bloquear a inicialização do mapa se router falhar
+            console.warn('Erro ao adicionar handler de clique do marcador', e);
+          }
 
           markers.push(marker);
         });
