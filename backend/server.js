@@ -157,16 +157,19 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Criar abrigo - CORRIGIDO
 app.post('/api/abrigos', async (req, res) => {
   try {
-    const { nome, endereco, tipo_abrigo, vagas_disponiveis, formulario_inscricao_url, usuario_id } = req.body;
+    // 💡 NOVOS CAMPOS DESESTRUTURADOS
+    const { nome, endereco, vagas_disponiveis, formulario_inscricao_url, usuario_id,
+            tipo, capacidade_total, contato_responsavel, telefone, email, descricao,
+            restricoes, horario_funcionamento, cidade, estado, latitude, longitude,
+            tipo_abrigo } = req.body;
 
     console.log('=== CRIAR ABRIGO ===');
     console.log('Dados recebidos:', req.body);
 
     // Validar campos obrigatórios
-    const validation = validateFields(req.body, ['nome', 'endereco', 'usuario_id']);
+    const validation = validateFields(req.body, ['nome', 'endereco', 'usuario_id', 'tipo']);
     if (validation) return badRequest(res, validation);
 
     // Verificar se o usuário existe
@@ -184,7 +187,7 @@ app.post('/api/abrigos', async (req, res) => {
       return badRequest(res, 'Spots cannot be negative');
     }
 
-    // Processar tipo_abrigo - CORRIGIDO
+    // Processar tipo_abrigo (flags) - MANTIDO
     const flags = {
       tipo_feminino: false,
       aceita_pets: false,
@@ -193,13 +196,10 @@ app.post('/api/abrigos', async (req, res) => {
 
     if (tipo_abrigo && Array.isArray(tipo_abrigo)) {
       const validTypes = ['Pets', 'Feminino', 'Masculino'];
-
-      // Validar tipos
       const invalidTypes = tipo_abrigo.filter(type => !validTypes.includes(type));
       if (invalidTypes.length > 0) {
         return badRequest(res, `Invalid type provided: ${invalidTypes.join(', ')}`);
       }
-
       flags.tipo_feminino = tipo_abrigo.includes('Feminino');
       flags.aceita_pets = tipo_abrigo.includes('Pets');
       flags.tipo_masculino = tipo_abrigo.includes('Masculino');
@@ -210,88 +210,28 @@ app.post('/api/abrigos', async (req, res) => {
     const cleanNome = nome.trim();
     const cleanEndereco = endereco.trim();
     const cleanUrl = formulario_inscricao_url ? formulario_inscricao_url.trim() : null;
-    // Detect schema differences: older init-db.sql uses different column names
-    const colRes = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'abrigos'");
-    const columns = colRes.rows.map(r => r.column_name);
 
-    let insertResult;
-    if (columns.includes('aceita_pets')) {
-      // Newer schema: supports aceita_pets, tipo_feminino, tipo_masculino, formulario_inscricao_url
-      // But some DBs are 'hybrid' and still require legacy NOT NULL fields (cidade, latitude, tipo, capacidade_total, etc.).
-      const hasLat = columns.includes('latitude');
-      const hasLng = columns.includes('longitude');
-      const hasCidade = columns.includes('cidade');
-      const hasEstado = columns.includes('estado');
-      const hasTipo = columns.includes('tipo');
-      const hasCapacidade = columns.includes('capacidade_total');
+    // Processar campos de geocodificação/cidade/estado e garantir valores NOT NULL
+    const lat = (latitude !== undefined && latitude !== null && latitude !== '') ? parseFloat(latitude) : -30.0346;
+    const lng = (longitude !== undefined && longitude !== null && longitude !== '') ? parseFloat(longitude) : -51.2177;
 
-      // Parse incoming coordinates or use sensible defaults to avoid NOT NULL violations
-      const latitude = (req.body.latitude !== undefined && req.body.latitude !== null && req.body.latitude !== '') ? parseFloat(req.body.latitude) : -30.0346;
-      const longitude = (req.body.longitude !== undefined && req.body.longitude !== null && req.body.longitude !== '') ? parseFloat(req.body.longitude) : -51.2177;
+    const finalCidade = cidade || 'Porto Alegre';
+    const finalEstado = estado || 'RS';
+    const finalTipo = tipo.toLowerCase();
+    const finalCapacidade = parseInt(capacidade_total) || spots || 0;
 
-      // Defaults for legacy fields
-      const cidade = req.body.cidade || 'Porto Alegre';
-      const estado = req.body.estado || 'RS';
-      // map provided tipo_abrigo to one of legacy allowed types if possible, otherwise default to 'temporario'
-      let tipo = 'temporario';
-      if (Array.isArray(tipo_abrigo) && tipo_abrigo.length > 0) {
-        const lower = tipo_abrigo[0].toString().toLowerCase();
-        if (['temporario','permanente','emergencia'].includes(lower)) tipo = lower;
-      } else if (typeof tipo_abrigo === 'string') {
-        const lower = tipo_abrigo.toLowerCase();
-        if (['temporario','permanente','emergencia'].includes(lower)) tipo = lower;
-      }
-      const capacidade_total = parseInt(req.body.capacidade_total) || spots || 0;
-
-      const needsLegacy = hasCidade || hasEstado || hasTipo || hasCapacidade || hasLat || hasLng;
-
-      if (needsLegacy) {
-        // Use the legacy/full insert to satisfy NOT NULL constraints when present in the DB
-        insertResult = await pool.query(
-          `INSERT INTO abrigos (nome, endereco, latitude, longitude, cidade, estado, tipo, capacidade_total, vagas_disponiveis, contato_responsavel, telefone, email, descricao, infraestrutura, restricoes, horario_funcionamento, ativo, usuario_id, verificado)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,true,$17,false)
-           RETURNING *`,
-          [cleanNome, cleanEndereco, latitude, longitude, cidade, estado, tipo, capacidade_total, spots, req.body.contato_responsavel || null, req.body.telefone || null, req.body.email || null, req.body.descricao || null, req.body.infraestrutura ? JSON.stringify(req.body.infraestrutura) : null, req.body.restricoes || null, req.body.horario_funcionamento || null, usuario_id]
-        );
-      } else if (hasLat && hasLng) {
-        // New minimal insert but include lat/lng
-        insertResult = await pool.query(
-          `INSERT INTO abrigos (usuario_id, nome, endereco, latitude, longitude, aceita_pets, tipo_feminino, tipo_masculino, vagas_disponiveis, formulario_inscricao_url, ativo)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true) RETURNING *`,
-          [usuario_id, cleanNome, cleanEndereco, latitude, longitude, flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino, spots, cleanUrl]
-        );
-      } else {
-        // Minimal insert without lat/lng
-        insertResult = await pool.query(
-          `INSERT INTO abrigos (usuario_id, nome, endereco, aceita_pets, tipo_feminino, tipo_masculino, vagas_disponiveis, formulario_inscricao_url, ativo)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true) RETURNING *`,
-          [usuario_id, cleanNome, cleanEndereco, flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino, spots, cleanUrl]
-        );
-      }
-    } else {
-      // Legacy schema from init-db.sql: requires latitude, longitude, cidade, estado, tipo, capacidade_total, vagas_disponiveis
-      const latitude = (req.body.latitude !== undefined) ? parseFloat(req.body.latitude) : -30.0346;
-      const longitude = (req.body.longitude !== undefined) ? parseFloat(req.body.longitude) : -51.2177;
-      const cidade = req.body.cidade || 'Porto Alegre';
-      const estado = req.body.estado || 'RS';
-      // Map provided tipo_abrigo to one of legacy allowed types if possible, otherwise default to 'temporario'
-      let tipo = 'temporario';
-      if (Array.isArray(tipo_abrigo) && tipo_abrigo.length > 0) {
-        const lower = tipo_abrigo[0].toString().toLowerCase();
-        if (['temporario','permanente','emergencia'].includes(lower)) tipo = lower;
-      } else if (typeof tipo_abrigo === 'string') {
-        const lower = tipo_abrigo.toLowerCase();
-        if (['temporario','permanente','emergencia'].includes(lower)) tipo = lower;
-      }
-      const capacidade_total = parseInt(req.body.capacidade_total) || spots || 0;
-
-      insertResult = await pool.query(
-        `INSERT INTO abrigos (nome, endereco, latitude, longitude, cidade, estado, tipo, capacidade_total, vagas_disponiveis, contato_responsavel, telefone, email, descricao, infraestrutura, restricoes, horario_funcionamento, ativo, usuario_id, verificado)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,true,$17,false)
-         RETURNING *`,
-        [cleanNome, cleanEndereco, latitude, longitude, cidade, estado, tipo, capacidade_total, spots, null, null, null, null, null, null, null, usuario_id]
-      );
-    }
+    // Inserir com todos os campos do schema completo
+    const insertResult = await pool.query(
+      `INSERT INTO abrigos (nome, endereco, latitude, longitude, cidade, estado, tipo, capacidade_total, vagas_disponiveis, contato_responsavel, telefone, email, descricao, infraestrutura, aceita_pets, tipo_feminino, tipo_masculino, restricoes, horario_funcionamento, ativo, usuario_id, verificado, formulario_inscricao_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, true, $20, false, $21)
+       RETURNING *`,
+      [
+        cleanNome, cleanEndereco, lat, lng, finalCidade, finalEstado, finalTipo, finalCapacidade, spots,
+        contato_responsavel || null, telefone || null, email || null, descricao || null, null,
+        flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino, restricoes || null,
+        horario_funcionamento || null, usuario_id, cleanUrl
+      ]
+    );
 
     console.log('Shelter created:', insertResult.rows[0]);
     res.status(201).json({ success: true, abrigo: insertResult.rows[0] });
