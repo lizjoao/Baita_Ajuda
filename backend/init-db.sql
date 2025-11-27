@@ -35,6 +35,9 @@ CREATE TABLE abrigos (
     email VARCHAR(100),
     descricao TEXT,
     infraestrutura JSONB,
+    aceita_pets BOOLEAN DEFAULT false,
+    tipo_feminino BOOLEAN DEFAULT false,
+    tipo_masculino BOOLEAN DEFAULT false,
     restricoes TEXT,
     horario_funcionamento VARCHAR(100),
     ativo BOOLEAN DEFAULT true,
@@ -104,36 +107,36 @@ INSERT INTO usuarios (nome, email, senha, tipo, telefone, cpf) VALUES
 ('João Santos', 'joao@baitaajuda.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'comum', '(51) 98888-0000', '222.222.222-22');
 
 
-INSERT INTO abrigos (nome, endereco, latitude, longitude, cidade, estado, tipo, capacidade_total, vagas_disponiveis, contato_responsavel, telefone, email, descricao, infraestrutura, ativo, usuario_id, verificado) VALUES
-('Ginásio Municipal Centro', 'Rua dos Andradas, 1234 - Centro, Porto Alegre - RS', -30.0346, -51.2177, 'Porto Alegre', 'RS', 'emergencia', 200, 150, 'João Santos', '(51) 3333-1111', 'ginasio@poa.rs.gov.br', 'Abrigo emergencial com estrutura completa.', '{"banheiros": 10, "chuveiros": 8, "cozinha": true}', true, 2, true),
+INSERT INTO abrigos (nome, endereco, latitude, longitude, cidade, estado, tipo, capacidade_total, vagas_disponiveis, contato_responsavel, telefone, email, descricao, infraestrutura, aceita_pets, tipo_feminino, tipo_masculino, ativo, usuario_id, verificado) VALUES
+('Ginásio Municipal Centro', 'Rua dos Andradas, 1234 - Centro, Porto Alegre - RS', -30.0346, -51.2177, 'Porto Alegre', 'RS', 'emergencia', 200, 150, 'João Santos', '(51) 3333-1111', 'ginasio@poa.rs.gov.br', 'Abrigo emergencial com estrutura completa.', '{"banheiros": 10, "chuveiros": 8, "cozinha": true}', false, true, true, true, 2, true),
 
-('Centro Comunitário Sarandi', 'Av. Assis Brasil, 3500 - Sarandi, Porto Alegre - RS', -30.0030, -51.1730, 'Porto Alegre', 'RS', 'temporario', 120, 80, 'Ana Paula Costa', '(51) 3342-2222', 'sarandi@poa.rs.gov.br', 'Abrigo comunitário na zona norte.', '{"banheiros": 6, "chuveiros": 6}', true, 2, true),
+('Centro Comunitário Sarandi', 'Av. Assis Brasil, 3500 - Sarandi, Porto Alegre - RS', -30.0030, -51.1730, 'Porto Alegre', 'RS', 'temporario', 120, 80, 'Ana Paula Costa', '(51) 3342-2222', 'sarandi@poa.rs.gov.br', 'Abrigo comunitário na zona norte.', '{"banheiros": 6, "chuveiros": 6}', true, true, true, true, 2, true),
 
-('Casa Restinga', 'Rua Aparício Borges, 234 - Restinga, Porto Alegre - RS', -30.1736, -51.1088, 'Porto Alegre', 'RS', 'permanente', 80, 50, 'Carlos Lima', '(51) 3361-3333', 'restinga@poa.rs.gov.br', 'Abrigo permanente na zona sul.', '{"banheiros": 5, "lavanderia": true}', true, 2, true),
+('Casa Restinga', 'Rua Aparício Borges, 234 - Restinga, Porto Alegre - RS', -30.1736, -51.1088, 'Porto Alegre', 'RS', 'permanente', 80, 50, 'Carlos Lima', '(51) 3361-3333', 'restinga@poa.rs.gov.br', 'Abrigo permanente na zona sul.', '{"banheiros": 5, "lavanderia": true}', false, true, true, true, 2, true),
 
-('Abrigo Canoas', 'Av. Guilherme Schell, 6750 - Centro, Canoas - RS', -29.9177, -51.1854, 'Canoas', 'RS', 'emergencia', 150, 100, 'Fernanda Souza', '(51) 3472-4444', 'canoas@prefeitura.rs.gov.br', 'Principal abrigo de Canoas.', '{"banheiros": 8, "enfermaria": true}', true, 2, true),
+('Abrigo Canoas', 'Av. Guilherme Schell, 6750 - Centro, Canoas - RS', -29.9177, -51.1854, 'Canoas', 'RS', 'emergencia', 150, 100, 'Fernanda Souza', '(51) 3472-4444', 'canoas@prefeitura.rs.gov.br', 'Principal abrigo de Canoas.', '{"banheiros": 8, "enfermaria": true}', true, true, true, true, 2, true),
 
-('Centro NH', 'Av. Nações Unidas, 5000 - Centro, Novo Hamburgo - RS', -29.6783, -51.1320, 'Novo Hamburgo', 'RS', 'temporario', 100, 70, 'Roberto Alves', '(51) 3593-5555', 'nh@prefeitura.rs.gov.br', 'Abrigo central de NH.', '{"banheiros": 6, "sala_capacitacao": true}', true, 2, true),
+('Centro NH', 'Av. Nações Unidas, 5000 - Centro, Novo Hamburgo - RS', -29.6783, -51.1320, 'Novo Hamburgo', 'RS', 'temporario', 100, 70, 'Roberto Alves', '(51) 3593-5555', 'nh@prefeitura.rs.gov.br', 'Abrigo central de NH.', '{"banheiros": 6, "sala_capacitacao": true}', false, true, true, true, 2, true),
 
-('Abrigo São Leopoldo', 'Av. Feitoria, 1500 - Feitoria, São Leopoldo - RS', -29.7604, -51.1480, 'São Leopoldo', 'RS', 'permanente', 90, 60, 'Patricia Mendes', '(51) 3592-6666', 'abrigo@saoleopoldo.rs.gov.br', 'Abrigo com parceria universitária.', '{"biblioteca": true, "cursos": true}', true, 2, true),
+('Abrigo São Leopoldo', 'Av. Feitoria, 1500 - Feitoria, São Leopoldo - RS', -29.7604, -51.1480, 'São Leopoldo', 'RS', 'permanente', 90, 60, 'Patricia Mendes', '(51) 3592-6666', 'abrigo@saoleopoldo.rs.gov.br', 'Abrigo com parceria universitária.', '{"biblioteca": true, "cursos": true}', false, true, true, true, 2, true),
 
-('Casa Viamão', 'Av. João Goulart, 2345 - Centro, Viamão - RS', -30.0811, -51.0233, 'Viamão', 'RS', 'temporario', 70, 45, 'Lucas Ferreira', '(51) 3485-7777', 'viamao@abrigo.org.br', 'Abrigo familiar.', '{"area_externa": true, "horta": true}', true, 2, true),
+('Casa Viamão', 'Av. João Goulart, 2345 - Centro, Viamão - RS', -30.0811, -51.0233, 'Viamão', 'RS', 'temporario', 70, 45, 'Lucas Ferreira', '(51) 3485-7777', 'viamao@abrigo.org.br', 'Abrigo familiar.', '{"area_externa": true, "horta": true}', true, true, true, true, 2, true),
 
-('Abrigo Gravataí', 'Av. Dorival Cândido, 3456 - Centro, Gravataí - RS', -29.9436, -50.9919, 'Gravataí', 'RS', 'emergencia', 110, 75, 'Juliana Rocha', '(51) 3489-8888', 'gravatai@prefeitura.rs.gov.br', 'Estrutura moderna.', '{"banheiros": 7, "enfermaria": true}', true, 2, true),
+('Abrigo Gravataí', 'Av. Dorival Cândido, 3456 - Centro, Gravataí - RS', -29.9436, -50.9919, 'Gravataí', 'RS', 'emergencia', 110, 75, 'Juliana Rocha', '(51) 3489-8888', 'gravatai@prefeitura.rs.gov.br', 'Estrutura moderna.', '{"banheiros": 7, "enfermaria": true}', false, true, true, true, 2, true),
 
-('Centro Comunitário Alvorada', 'Av. Presidente Vargas, 2500 - Centro, Alvorada - RS', -30.0011, -51.0800, 'Alvorada', 'RS', 'temporario', 85, 55, 'Marina Costa', '(51) 3441-1111', 'alvorada@prefeitura.rs.gov.br', 'Abrigo comunitário.', '{"playground": true, "cozinha": true}', true, 2, true),
+('Centro Comunitário Alvorada', 'Av. Presidente Vargas, 2500 - Centro, Alvorada - RS', -30.0011, -51.0800, 'Alvorada', 'RS', 'temporario', 85, 55, 'Marina Costa', '(51) 3441-1111', 'alvorada@prefeitura.rs.gov.br', 'Abrigo comunitário.', '{"playground": true, "cozinha": true}', true, true, true, true, 2, true),
 
-('Casa Cachoeirinha', 'Av. Flores da Cunha, 3200 - Centro, Cachoeirinha - RS', -29.9511, -51.0944, 'Cachoeirinha', 'RS', 'permanente', 95, 65, 'Raquel Soares', '(51) 3470-2222', 'cachoeirinha@prefeitura.rs.gov.br', 'Abrigo permanente.', '{"acessibilidade": true}', true, 2, true),
+('Casa Cachoeirinha', 'Av. Flores da Cunha, 3200 - Centro, Cachoeirinha - RS', -29.9511, -51.0944, 'Cachoeirinha', 'RS', 'permanente', 95, 65, 'Raquel Soares', '(51) 3470-2222', 'cachoeirinha@prefeitura.rs.gov.br', 'Abrigo permanente.', '{"acessibilidade": true}', false, true, true, true, 2, true),
 
-('Abrigo Zona Sul POA', 'Av. Cavalhada, 4500 - Cavalhada, Porto Alegre - RS', -30.1200, -51.2400, 'Porto Alegre', 'RS', 'emergencia', 130, 90, 'André Silva', '(51) 3268-3333', 'zonasul@poa.rs.gov.br', 'Zona sul de POA.', '{"estacionamento": true}', true, 2, true),
+('Abrigo Zona Sul POA', 'Av. Cavalhada, 4500 - Cavalhada, Porto Alegre - RS', -30.1200, -51.2400, 'Porto Alegre', 'RS', 'emergencia', 130, 90, 'André Silva', '(51) 3268-3333', 'zonasul@poa.rs.gov.br', 'Zona sul de POA.', '{"estacionamento": true}', false, true, true, true, 2, true),
 
-('Centro Lomba', 'Est. João de Oliveira Remião, 5678 - Lomba, Porto Alegre - RS', -30.1500, -51.1200, 'Porto Alegre', 'RS', 'temporario', 75, 50, 'Carla Santos', '(51) 3349-4444', 'lomba@poa.rs.gov.br', 'Zona leste.', '{"horta": true}', true, 2, true),
+('Centro Lomba', 'Est. João de Oliveira Remião, 5678 - Lomba, Porto Alegre - RS', -30.1500, -51.1200, 'Porto Alegre', 'RS', 'temporario', 75, 50, 'Carla Santos', '(51) 3349-4444', 'lomba@poa.rs.gov.br', 'Zona leste.', '{"horta": true}', false, true, true, true, 2, true),
 
-('Abrigo Partenon', 'Av. Bento Gonçalves, 2300 - Partenon, Porto Alegre - RS', -30.0600, -51.1700, 'Porto Alegre', 'RS', 'emergencia', 140, 95, 'Roberto Lima', '(51) 3330-5555', 'partenon@poa.rs.gov.br', 'Zona leste.', '{"enfermaria": true}', true, 2, true),
+('Abrigo Partenon', 'Av. Bento Gonçalves, 2300 - Partenon, Porto Alegre - RS', -30.0600, -51.1700, 'Porto Alegre', 'RS', 'emergencia', 140, 95, 'Roberto Lima', '(51) 3330-5555', 'partenon@poa.rs.gov.br', 'Zona leste.', '{"enfermaria": true}', true, true, true, true, 2, true),
 
-('Casa Esteio', 'Rua XV de Novembro, 450 - Centro, Esteio - RS', -29.8585, -51.1793, 'Esteio', 'RS', 'temporario', 65, 40, 'Paula Oliveira', '(51) 3458-6666', 'esteio@prefeitura.rs.gov.br', 'Centro de Esteio.', '{"cozinha": true}', true, 2, true),
+('Casa Esteio', 'Rua XV de Novembro, 450 - Centro, Esteio - RS', -29.8585, -51.1793, 'Esteio', 'RS', 'temporario', 65, 40, 'Paula Oliveira', '(51) 3458-6666', 'esteio@prefeitura.rs.gov.br', 'Centro de Esteio.', '{"cozinha": true}', false, true, true, true, 2, true),
 
-('Abrigo Sapucaia', 'Av. Leônidas de Souza, 1200 - Centro, Sapucaia do Sul - RS', -29.8268, -51.1464, 'Sapucaia do Sul', 'RS', 'permanente', 80, 55, 'Bruno Dias', '(51) 3474-7777', 'sapucaia@prefeitura.rs.gov.br', 'Sapucaia do Sul.', '{"sala_tv": true}', true, 2, true);
+('Abrigo Sapucaia', 'Av. Leônidas de Souza, 1200 - Centro, Sapucaia do Sul - RS', -29.8268, -51.1464, 'Sapucaia do Sul', 'RS', 'permanente', 80, 55, 'Bruno Dias', '(51) 3474-7777', 'sapucaia@prefeitura.rs.gov.br', 'Sapucaia do Sul.', '{"sala_tv": true}', false, true, true, true, 2, true);
 
 -- Necessidades (1 por abrigo)
 INSERT INTO necessidades (abrigo_id, categoria, item, quantidade_necessaria, unidade, prioridade, descricao) VALUES

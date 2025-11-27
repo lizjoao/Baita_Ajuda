@@ -107,6 +107,7 @@ const Map = ({ shelters = [] }) => {
                     <div style="font-size:12px; color:#666; margin-bottom:6px;">${shelter.endereco || ''}</div>
                     <div style="font-size:13px; margin-bottom:6px;"><span style="font-weight:700;color:${(shelter.vagas_disponiveis || 0) > 0 ? '#28a745' : '#dc3545'}">Vagas: ${shelter.vagas_disponiveis ?? shelter.vagas ?? 0}</span></div>
                     <div style="font-size:12px;color:#444;margin-bottom:6px;">Avaliação: <span style="font-weight:700;color:#ffb400;">${avg ? avg + ' ⭐' : '—'}</span> <small style="color:#666">(${totalReviews})</small></div>
+                      ${''}
                   </div>
                 </div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">

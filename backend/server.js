@@ -264,7 +264,13 @@ app.get('/api/abrigos', async (req, res) => {
     const limit = parseInt(req.query.limit || '10');
     const offset = (page - 1) * limit;
 
-    let selectClause = 'SELECT a.*, u.nome as responsavel_nome';
+  // Include aggregated review fields so the frontend map popups can show rating info
+  let selectClause = `SELECT a.*, u.nome as responsavel_nome,
+    (SELECT ROUND(AVG(nota)::numeric,2) FROM avaliacoes av WHERE av.abrigo_id = a.id) AS media_avaliacoes,
+    (SELECT COUNT(*) FROM avaliacoes av WHERE av.abrigo_id = a.id) AS total_avaliacoes,
+    (SELECT av.comentario FROM avaliacoes av WHERE av.abrigo_id = a.id ORDER BY av.data_avaliacao DESC NULLS LAST LIMIT 1) AS last_review_comentario,
+    (SELECT av.nota FROM avaliacoes av WHERE av.abrigo_id = a.id ORDER BY av.data_avaliacao DESC NULLS LAST LIMIT 1) AS last_review_nota,
+    (SELECT av.data_avaliacao FROM avaliacoes av WHERE av.abrigo_id = a.id ORDER BY av.data_avaliacao DESC NULLS LAST LIMIT 1) AS last_review_data`;
     if (lat && lng) {
       const latitude = parseFloat(lat);
       const longitude = parseFloat(lng);
@@ -360,8 +366,9 @@ app.get('/api/abrigos', async (req, res) => {
         lat: latVal,
         lng: lngVal,
         aceita_pets: normalizeBool(r.aceita_pets, false),
-        tipo_feminino: normalizeBool(r.tipo_feminino, true),
-        tipo_masculino: normalizeBool(r.tipo_masculino, true)
+        // default to false for tipo_feminino/tipo_masculino so filters work predictably
+        tipo_feminino: normalizeBool(r.tipo_feminino, false),
+        tipo_masculino: normalizeBool(r.tipo_masculino, false)
       };
     });
 
@@ -447,8 +454,8 @@ app.get('/api/abrigos/:id', async (req, res) => {
       lat: latVal,
       lng: lngVal,
       aceita_pets: normalizeBool(r.aceita_pets, false),
-      tipo_feminino: normalizeBool(r.tipo_feminino, true),
-      tipo_masculino: normalizeBool(r.tipo_masculino, true)
+      tipo_feminino: normalizeBool(r.tipo_feminino, false),
+      tipo_masculino: normalizeBool(r.tipo_masculino, false)
     };
 
     res.json({ success: true, abrigo: abrigoNormalized });
