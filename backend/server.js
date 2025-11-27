@@ -2,6 +2,7 @@ require('dotenv').config(); // ← Adicionar no topo
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -104,7 +105,13 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const user = result.rows[0];
-    const isValid = await bcrypt.compare(senha, user.senha_hash);
+    // Support both legacy (senha) and newer (senha_hash) column names
+    const storedHash = user.senha_hash || user.senha;
+    if (!storedHash) {
+      console.warn('User has no password hash column (expected senha_hash or senha)');
+      return unauthorized(res);
+    }
+    const isValid = await bcrypt.compare(senha, storedHash);
 
     if (!isValid) {
       return unauthorized(res);
