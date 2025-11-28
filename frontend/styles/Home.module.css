@@ -5,32 +5,44 @@
   background: var(--gray-50);
 }
 
-/* Main Content agora é o container Grid */
+/* Main Content */
 .main {
-  padding: 0;
+  /* Contexto para o layout fixo */
+  position: relative;
+  padding-top: 70px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
   margin: 0;
   width: 100%;
   flex: 1;
-
-  /* 💡 Layout Grid para dividir ListCatalog e Mapa */
-  display: grid;
-  /* Colunas: 1ª coluna fixa para a lista (350px a 450px), 2ª coluna preenche o restante */
-  grid-template-columns: minmax(350px, 450px) 1fr;
-  grid-template-rows: 100vh; /* Ocupa a altura total do viewport */
-  overflow: hidden;
+  min-height: calc(100vh - 70px);
+  display: flex; /* Flexbox para gerenciar o layout */
 }
 
-/* 💡 NOVA SEÇÃO: Coluna da Lista (Scrollable List Catalog - Lado Esquerdo) */
+/* ESPAÇADOR: Cria o espaço físico para a lista fixa no Desktop */
+.main::before {
+    content: '';
+    display: block;
+    width: 450px; /* Mesma largura da lista */
+    height: 1px;
+    flex-shrink: 0; /* Impede que o espaçador encolha */
+}
+
+/* Coluna da Lista (Scrollable - Lado Esquerdo FIXO) */
 .listCatalog {
-    grid-column: 1 / 2; /* Ocupa a primeira coluna */
-    height: 100%;
-    overflow-y: auto; /* Permite scroll na lista */
+    position: fixed;
+    top: 70px;
+    left: 0;
+    width: 450px;
+    height: calc(100vh - 70px);
+    overflow-y: auto;
     background: var(--gray-50);
     z-index: 10;
-    padding: 2rem 1.5rem; /* Padding interno */
+    padding: 2rem 1.5rem;
 }
 
-/* Filtros (Estilos internos - mantidos) */
+/* Filtros */
 .filterContainer {
   display: flex;
   gap: 1rem;
@@ -41,16 +53,17 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   width: 100%;
-  margin-bottom: 1.5rem; /* Espaçamento entre filtros e lista */
+  margin-bottom: 1.5rem;
 }
 
 .searchInput,
-.vagasInput {
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--gray-200);
-  border-radius: var(--radius-md);
+.vagasInput,
+.sortSelect {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
   font-size: 0.95rem;
-  transition: all var(--transition-base);
+  transition: all 0.2s ease;
   background: var(--white);
   color: var(--gray-800);
 }
@@ -65,24 +78,25 @@
 }
 
 .searchInput:focus,
-.vagasInput:focus {
+.vagasInput:focus,
+.sortSelect:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
 .checkboxLabel {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  background: var(--gray-50);
-  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  background: var(--white);
+  border-radius: 8px;
   cursor: pointer;
   transition: all var(--transition-base);
   font-size: 0.95rem;
   user-select: none;
-  border: 2px solid transparent;
+  border: 1px solid var(--gray-300);
 }
 
 .checkboxLabel:hover {
@@ -120,12 +134,15 @@
   transform: translateY(0);
 }
 
-/* 💡 NOVA SEÇÃO: Container do Mapa (Right Column) */
+/* Container do Mapa (Lado Direito - FIXO) */
 .mapWrapper {
-    grid-column: 2 / -1; /* Ocupa a segunda coluna */
-    position: relative;
-    width: 100%;
-    height: 100%;
+    position: fixed;
+    top: 90px;
+    left: 450px; /* ⚠️ Culpado do problema no mobile se não resetado */
+    width: calc(100% - 450px);
+    height: calc(100vh - 70px);
+    border-left: 1px solid;
+    z-index: 1;
 }
 
 .shelterListDisplay {
@@ -139,8 +156,92 @@
     font-weight: 700;
 }
 
+/* Card Styles */
+.sheltersGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.shelterCard {
+    background: var(--white);
+    padding: 1.25rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid var(--gray-200);
+}
+
+.shelterCard:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    border-color: var(--primary-light);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.cardHeader h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.cardAddress {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    margin-bottom: 0.5rem;
+}
+
+.cardVagas {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.available { color: var(--success-color); }
+.full { color: var(--danger-color); }
+
+.cardTags {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.tagPets {
+    background-color: var(--primary-extralight);
+    color: var(--primary-color);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.tagFeminino {
+    background-color: #f3e5f5;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.tagMasculino {
+    background-color: #e8f5e9;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
 .mapContainer {
-  /* O Mapa deve preencher totalmente o mapWrapper */
   width: 100%;
   height: 100%;
   border-radius: 0;
@@ -167,30 +268,45 @@
   margin-bottom: 1rem;
 }
 
-
-/* Responsivo */
+/* RESPONSIVIDADE MOBILE (Correção) */
 @media (max-width: 900px) {
   .main {
-    /* Stack elements vertically for smaller screens */
-    grid-template-columns: 1fr;
-    grid-template-rows: 50vh auto; /* Mapa toma 50vh, lista é rolada abaixo */
-    height: auto;
+    padding: 70px 0 0 0;
+    flex-direction: column; /* Empilha verticalmente */
+    min-height: auto;
     overflow-y: visible;
-    padding: 0;
   }
 
+  /* Remove o espaço reservado que só era necessário no desktop */
+  .main::before {
+    display: none;
+  }
+
+  /* Reseta a lista para fluxo normal */
   .listCatalog {
-    grid-row: 2; /* Lista abaixo do mapa */
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
     height: auto;
+    overflow-y: visible;
+    order: 2; /* Lista embaixo */
     padding: 1rem;
   }
 
+  /* Ajusta o mapa para o topo */
   .mapWrapper {
-    grid-row: 1; /* Mapa no topo */
+    position: relative;
+    top: auto;
+    left: 0; /* 💡 FIX: Reseta o left: 450px do desktop para 0 */
+    margin-left: 0;
+    width: 100%;
+    height: 400px; /* Altura fixa para o mapa no mobile */
+    order: 1; /* Mapa em cima */
   }
 
   .mapContainer {
-    height: 100%; /* Preenche o 50vh container */
+    position: relative;
   }
 }
 
@@ -205,7 +321,11 @@
   .searchInput,
   .vagasInput,
   .checkboxLabel,
-  .distanceButton {
+  .distanceButton,
+  .sortSelect {
     width: 100%;
+  }
+  .shelterListDisplay h2 {
+    font-size: 1.5rem;
   }
 }

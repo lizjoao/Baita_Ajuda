@@ -112,8 +112,8 @@ const Map = ({ shelters = [] }) => {
                 </div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
                   <div style="background:#e3f2fd;padding:4px 8px;border-radius:12px;font-size:12px;">🐾 Pets: <strong style="margin-left:6px;">${acceptsPets}</strong></div>
-                  <div style="background:#f3e5f5;padding:4px 8px;border-radius:12px;font-size:12px;">♀ Mulheres: <strong style="margin-left:6px;">${acceptsWomen}</strong></div>
-                  <div style="background:#e8f5e9;padding:4px 8px;border-radius:12px;font-size:12px;">♂ Homens: <strong style="margin-left:6px;">${acceptsMen}</strong></div>
+                  <div style="background:#f3e5f5;padding:4px 8px;border-radius:12px;font-size:12px;">Mulheres: <strong style="margin-left:6px;">${acceptsWomen}</strong></div>
+                  <div style="background:#e8f5e9;padding:4px 8px;border-radius:12px;font-size:12px;">Homens: <strong style="margin-left:6px;">${acceptsMen}</strong></div>
                 </div>
                 <div style="margin-top:8px;text-align:right;">
                   <a href="/shelters/${shelter.id || shelter._id}" style="text-decoration:none;color:#fff;background:#467fcf;padding:6px 10px;border-radius:6px;font-size:12px;">Ver detalhes</a>
