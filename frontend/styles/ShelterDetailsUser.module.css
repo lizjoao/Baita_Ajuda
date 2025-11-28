@@ -311,11 +311,28 @@
 .successMsg { color: #28a745; background: rgba(40, 167, 69, 0.1); padding: 0.75rem; border-radius: 4px; font-size: 0.9rem; margin-bottom: 1rem; }
 
 /* MODAL & DONATIONS HISTORY */
-.donationsList { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem; }
-.donationListItem { padding: 0.75rem 1rem; background-color: #f0fff4; border-radius: 8px; border-left: 4px solid #28a745; display: flex; justify-content: space-between; align-items: center; }
-.donationQuantity { font-weight: 700; color: #28a745; }
-.donationDate { font-size: 0.85rem; color: #666; white-space: nowrap; margin-left: 1rem; }
-.donorName { font-weight: bold; }
+.donationsList {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* Espaço entre itens */
+  margin-top: 1.5rem;
+}
+
+.donationListItem {
+  padding: 1rem 1.5rem;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background-color: #fafafa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.donationListItem { border-left: 4px solid #28a745; }
+.donorName { font-weight: 700; }
+.donationDate { font-size: 0.85rem; color: #666; }
 
 .modalBackdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .modalContent { background-color: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }

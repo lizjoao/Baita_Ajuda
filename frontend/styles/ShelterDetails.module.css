@@ -292,21 +292,26 @@
    8. LISTAS (Necessidades, Reviews, Doações)
    ========================================= */
 .needsList, .reviewsList, .donationsList {
+  list-style: none;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.75rem; /* Espaço entre itens */
+  margin-top: 1.5rem;
 }
 
 .needItem, .reviewItem, .donationListItem {
-  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Centralização vertical */
+  padding: 1rem 1.5rem; /* Padding restaurado */
   border: 1px solid #f0f0f0;
   border-radius: 8px;
   background-color: #fafafa;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  transition: all 0.2s ease;
+  min-height: 40px; /* Garante altura mínima para alinhamento visual */
 }
+
 
 .needContent { width: 100%; display: flex; justify-content: space-between; align-items: center; }
 .itemName { font-weight: 700; color: #333; }
@@ -332,3 +337,17 @@
   .formRow { grid-template-columns: 1fr; }
   .headerRow, .cardHeader { flex-direction: column; align-items: flex-start; gap: 1rem; }
 }
+
+.statusBadge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.status-pendente { background: #fff3cd; color: #856404; }
+.status-em_andamento { background: #e0f2fe; color: #0369a1; }
+.status-entregue { background: #d1fae5; color: #065f46; }
+.status-cancelada { background: #fee2e2; color: #991b1b; text-decoration: line-through; }

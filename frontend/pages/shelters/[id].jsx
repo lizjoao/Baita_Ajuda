@@ -141,6 +141,7 @@ export default function ShelterDetail() {
   const [needs, setNeeds] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [donationsList, setDonationsList] = useState([]);
+  const [donationDescription, setDonationDescription] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -258,16 +259,19 @@ export default function ShelterDetail() {
     setSubmitting(true);
     setSubmitError(null);
 
-    try {
-      const response = await fetch(`http://localhost:5000/api/abrigos/${id}/doacoes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          doador_nome: donorName,
-          doador_contato: donorContact,
-          doacoes: donationItems,
-        }),
-      });
+      try {
+          const response = await fetch(`http://localhost:5000/api/abrigos/${id}/doacoes`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  doador_nome: donorName,
+		  doador_nome: donorName,
+                  doador_contato: donorContact,
+                  doacoes: donationItems,
+                  observacoes: donationDescription,
+                  status: 'pendente' // Status inicial padrão
+              }),
+          });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Falha ao registrar doação.');
@@ -277,6 +281,7 @@ export default function ShelterDetail() {
       setDonations({});
       setDonorName('');
       setDonorContact('');
+      setDonationDescription(''); // Limpar o campo
     } catch (err) {
       setSubmitError(err.message);
     } finally {
@@ -508,30 +513,23 @@ export default function ShelterDetail() {
           </div>
         </div>
 
-        {/* --- Donations History --- */}
+        {/* --- DONATIONS CARD (Read Only) --- */}
         <div className={styles.card}>
-          <h2>Doações Recebidas</h2>
-          {donationsList.length > 0 ? (
+            <div className={styles.cardHeader}>
+                <h2>Histórico de Doações</h2>
+            </div>
             <ul className={styles.donationsList}>
-              {donationsList.map(donation => (
-                <li key={donation.id} className={styles.donationListItem}>
-                  <div className={styles.donationInfo}>
-                    <span className={styles.donorName}>{donation.doador_nome}</span>
-                    <span> doou </span>
-                    <span className={styles.donationQuantity}>
-                      {donation.quantidade_doada}x {donation.item_nome}
-                    </span>
-                  </div>
-                  <span className={styles.donationDate}>
-                    {new Date(donation.data_doacao).toLocaleDateString('pt-BR')}
-                  </span>
-                </li>
-              ))}
+                {donationsList.length > 0 ? donationsList.map(d => (
+                    <li key={d.id} className={styles.donationListItem}>
+                        <div>
+                            <span className={styles.donorName}>{d.doador_nome}</span> doou <strong>{d.quantidade_doada} {d.item_nome}</strong>
+                        </div>
+                        <span className={styles.donationDate}>{new Date(d.data_doacao).toLocaleDateString()}</span>
+                    </li>
+                )) : <p className={styles.emptyState}>Nenhuma doação registrada.</p>}
             </ul>
-          ) : (
-            <p>Este abrigo ainda não registrou doações. Seja o primeiro!</p>
-          )}
         </div>
+
 
         {/* --- Donation Modal --- */}
         {isModalOpen && (

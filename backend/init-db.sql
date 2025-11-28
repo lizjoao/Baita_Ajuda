@@ -166,6 +166,10 @@ ALTER TABLE necessidades
 DROP COLUMN quantidade_necessaria,
 ADD COLUMN nivel VARCHAR(20) CHECK (nivel IN ('urgente', 'em_falta', 'suficiente', 'em_excesso')) DEFAULT 'em_falta';
 
+ALTER TABLE doacoes
+ADD COLUMN observacoes TEXT,
+ADD COLUMN status VARCHAR(20) DEFAULT 'pendente' CHECK (status IN ('pendente', 'em_andamento', 'entregue', 'cancelada'));
+
 -- Resumo
 SELECT
     'BANCO INICIALIZADO!' as status,
