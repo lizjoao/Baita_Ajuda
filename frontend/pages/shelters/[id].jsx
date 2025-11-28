@@ -59,6 +59,7 @@ function ReviewDistribution({ totalReviews, distribution, averageRating }) {
     { stars: 1, count: 0, percentage: 0 },
   ];
 
+
   return (
     <div className={styles.reviewDistribution}>
       <h3>{averageRating} de 5 ⭐</h3>
@@ -118,6 +119,15 @@ const calculateMeanRating = (reviews) => {
   return (sum / reviews.length).toFixed(1);
 };
 
+const formatLevel = (level) => {
+    const map = {
+        'urgente': 'Urgente',
+        'em_falta': 'Em Falta',
+        'suficiente': 'Suficiente',
+        'em_excesso': 'Em Excesso'
+    };
+    return map[level] || level;
+};
 /* ==========================================================================
    MAIN PAGE COMPONENT
    ========================================================================== */
@@ -215,6 +225,10 @@ export default function ShelterDetail() {
       setReviewSubmitting(false);
     }
   };
+
+    const activeNeeds = needs.filter(need =>
+	['urgente', 'em_falta'].includes(need.nivel)
+    );
 
   const handleDonationChange = (needId, quantity) => {
     const numQuantity = Number(quantity);
@@ -405,26 +419,27 @@ export default function ShelterDetail() {
           )}
         </div>
 
-        {/* --- Needs Card --- */}
+{/* --- NECESSIDADES (LISTA DE DOAÇÃO FILTRADA) --- */}
         <div className={styles.card}>
-          <h2>Necessidades do Abrigo</h2>
+          <h2>O que estamos precisando</h2>
           <button onClick={() => setIsModalOpen(true)} className={styles.donateButton}>
-            Doar Itens
+            Quero Doar Itens
           </button>
 
-          {needs.length > 0 ? (
+          {activeNeeds.length > 0 ? (
             <ul className={styles.needsList}>
-              {needs.map(need => (
+              {activeNeeds.map(need => (
                 <li key={need.id} className={styles.needsItem}>
-                    <p>{need.item}</p>
-		    <span className={`${styles.levelBadge} ${styles['level-' + need.nivel]}`}>
-			{need.nivel.replace('_', ' ')}
-		    </span>
+                  <p>{need.item}</p>
+                  {/* 💡 EXIBIÇÃO DO BADGE DE NÍVEL */}
+                  <span className={`${styles.levelBadge} ${styles['level-' + need.nivel]}`}>
+                    {formatLevel(need.nivel)}
+                  </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p>No momento, não há necessidades específicas cadastradas.</p>
+            <p style={{textAlign:'center', color:'#666'}}>O abrigo não registrou necessidades urgentes no momento.</p>
           )}
         </div>
 
@@ -543,7 +558,7 @@ export default function ShelterDetail() {
                 <div className={styles.donationItemsList}>
                   {needs.map(need => (
                     <div key={need.id} className={styles.donationItem}>
-                      <label>{need.item} ({need.quantidade})</label>
+                      <label>{need.item}</label>
                       <input
                         type="number"
                         min="0"
