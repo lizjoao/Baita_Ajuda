@@ -243,13 +243,13 @@ app.post('/api/abrigos', async (req, res) => {
   }
 });
 
-// Listar abrigos - CORRIGIDO
+// Listar abrigos - ATUALIZADO PARA SUPORTAR NOVAS ORDENS
 app.get('/api/abrigos', async (req, res) => {
   try {
     console.log('=== BUSCAR ABRIGOS ===');
     console.log('Query params:', req.query);
 
-    const { search, min_vagas, tipo_feminino, aceita_pets, tipo_masculino, lat, lng } = req.query;
+    const { search, min_vagas, tipo_feminino, aceita_pets, tipo_masculino, lat, lng, sort_by } = req.query;
     const page = parseInt(req.query.page || '1');
     const limit = parseInt(req.query.limit || '10');
     const offset = (page - 1) * limit;
@@ -270,7 +270,7 @@ app.get('/api/abrigos', async (req, res) => {
           (6371 * acos(
             cos(radians(${latitude})) *
             cos(radians(COALESCE(a.latitude, -30.0346))) *
-            cos(radians(COALESCE(a.longitude, -51.2177)) - radians(${longitude})) +
+            cos(radians(COALSECE(a.longitude, -51.2177)) - radians(${longitude})) +
             sin(radians(${latitude})) *
             sin(radians(COALESCE(a.latitude, -30.0346)))
           )) * 1000 as distance_meters`;
@@ -311,11 +311,19 @@ app.get('/api/abrigos', async (req, res) => {
     const totalShelters = parseInt(totalResult.rows[0].count);
     const totalPages = Math.ceil(totalShelters / limit);
 
-    // Ordenação
-    let orderByClause = 'ORDER BY a.created_at DESC';
-    if (lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
-      orderByClause = 'ORDER BY distance_meters ASC';
+    // 💡 LÓGICA DE ORDENAÇÃO POR PARÂMETRO
+    let orderByClause = 'ORDER BY a.created_at DESC'; // Padrão: Por data
+
+    if (sort_by === 'distance' && lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+      orderByClause = 'ORDER BY distance_meters ASC'; // 1. Proximidade
+    } else if (sort_by === 'rating') {
+      orderByClause = 'ORDER BY media_avaliacoes DESC NULLS LAST'; // 2. Avaliação
+    } else if (sort_by === 'name') {
+      orderByClause = 'ORDER BY a.nome ASC'; // 3. Nome
+    } else if (sort_by === 'date') {
+      orderByClause = 'ORDER BY a.created_at DESC'; // 4. Data
     }
+
 
     // Query principal
     const resultsQuery = `
@@ -334,7 +342,7 @@ app.get('/api/abrigos', async (req, res) => {
 
     const result = await pool.query(resultsQuery, params);
 
-    // Normalize coordinates: support both 'latitude'/'longitude' (legacy) and 'lat'/'lng' (other schemas)
+    // Normalize coordinates and boolean types (MANTIDO)
     const normalizedRows = result.rows.map(r => {
       const latVal = r.latitude !== undefined && r.latitude !== null ? Number(r.latitude)
         : (r.lat !== undefined && r.lat !== null ? Number(r.lat) : undefined);
@@ -356,7 +364,6 @@ app.get('/api/abrigos', async (req, res) => {
         lat: latVal,
         lng: lngVal,
         aceita_pets: normalizeBool(r.aceita_pets, false),
-        // default to false for tipo_feminino/tipo_masculino so filters work predictably
         tipo_feminino: normalizeBool(r.tipo_feminino, false),
         tipo_masculino: normalizeBool(r.tipo_masculino, false)
       };
@@ -537,30 +544,80 @@ app.post('/api/abrigos/:id/avaliacoes', async (req, res) => {
   }
 });
 
-// Atualizar um abrigo
+// ATUALIZAR ABRIGO (Completo)
 app.put('/api/abrigos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, endereco, tipo_abrigo, vagas_disponiveis, formulario_inscricao_url } = req.body;
+    // Destructure ALL fields
+    const {
+        nome, endereco, vagas_disponiveis, formulario_inscricao_url,
+        tipo, capacidade_total, contato_responsavel, telefone, email, descricao,
+        restricoes, horario_funcionamento, cidade, estado, latitude, longitude,
+        tipo_abrigo
+    } = req.body;
 
     const validation = validateFields(req.body, ['nome', 'endereco']);
     if (validation) return badRequest(res, validation);
 
     const spots = parseInt(vagas_disponiveis) || 0;
-    if (spots < 0) {
-      return badRequest(res, 'Spots cannot be negative');
+    if (spots < 0) return badRequest(res, 'Spots cannot be negative');
+
+    // Processar Flags (Tags)
+    const flags = {
+      tipo_feminino: false,
+      aceita_pets: false,
+      tipo_masculino: false,
+    };
+
+    if (tipo_abrigo && Array.isArray(tipo_abrigo)) {
+      flags.tipo_feminino = tipo_abrigo.includes('Feminino');
+      flags.aceita_pets = tipo_abrigo.includes('Pets');
+      flags.tipo_masculino = tipo_abrigo.includes('Masculino');
     }
 
     const cleanNome = nome.trim();
     const cleanEndereco = endereco.trim();
     const cleanUrl = formulario_inscricao_url ? formulario_inscricao_url.trim() : null;
 
+    // Handle optional fields
+    const finalTipo = tipo ? tipo.toLowerCase() : 'temporario';
+    const finalCapacidade = parseInt(capacidade_total) || spots || 0;
+    // Keep existing lat/lng if not provided, or update if provided
+    // (In a real app you might want to re-geocode here if address changed)
+
+    // Dynamic update query or fixed big query. Let's use a fixed query for safety/simplicity.
     const result = await pool.query(`
       UPDATE Abrigos
-      SET nome = $1, endereco = $2, vagas_disponiveis = $3, formulario_inscricao_url = $4, updated_at = NOW()
-      WHERE id = $5 AND ativo = true
+      SET
+        nome = $1,
+        endereco = $2,
+        vagas_disponiveis = $3,
+        formulario_inscricao_url = $4,
+        tipo = $5,
+        capacidade_total = $6,
+        contato_responsavel = $7,
+        telefone = $8,
+        email = $9,
+        descricao = $10,
+        restricoes = $11,
+        horario_funcionamento = $12,
+        aceita_pets = $13,
+        tipo_feminino = $14,
+        tipo_masculino = $15,
+        cidade = COALESCE($16, cidade),
+        estado = COALESCE($17, estado),
+        updated_at = NOW()
+      WHERE id = $18 AND ativo = true
       RETURNING *
-    `, [cleanNome, cleanEndereco, spots, cleanUrl, id]);
+    `, [
+        cleanNome, cleanEndereco, spots, cleanUrl,
+        finalTipo, finalCapacidade,
+        contato_responsavel || null, telefone || null, email || null,
+        descricao || null, restricoes || null, horario_funcionamento || null,
+        flags.aceita_pets, flags.tipo_feminino, flags.tipo_masculino,
+        cidade || null, estado || null,
+        id
+    ]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
@@ -604,7 +661,7 @@ app.get('/api/abrigos/:id/necessidades', async (req, res) => {
     // Select columns matching the schema in backend/init-db.sql and alias them to the shape the frontend expects
     // init-db.sql defines: id, abrigo_id, categoria, item, quantidade_necessaria, unidade, prioridade, descricao, data_solicitacao, atendida
     const needsQuery = `
-      SELECT id, abrigo_id, categoria, item, quantidade_necessaria AS quantidade, unidade,
+      SELECT id, abrigo_id, categoria, item, nivel, unidade,
              prioridade AS urgencia, descricao, data_solicitacao
       FROM necessidades
       WHERE abrigo_id = $1
@@ -617,7 +674,7 @@ app.get('/api/abrigos/:id/necessidades', async (req, res) => {
     } catch (err) {
       // fallback: try selecting with id ordering
       const fallback = `
-        SELECT id, abrigo_id, categoria, item, quantidade_necessaria AS quantidade, unidade,
+        SELECT id, abrigo_id, categoria, item, nivel, unidade,
                prioridade AS urgencia, descricao
         FROM necessidades
         WHERE abrigo_id = $1
@@ -631,41 +688,30 @@ app.get('/api/abrigos/:id/necessidades', async (req, res) => {
     handleError(res, error, 'Failed to fetch shelter needs');
   }
 });
-
-// Adicionar necessidade a um abrigo
+// POST: Adicionar necessidade (Atualizado)
 app.post('/api/abrigos/:id/necessidades', async (req, res) => {
   try {
     const { id } = req.params;
-    const { item, quantidade, urgencia } = req.body;
+    const { item, nivel } = req.body; // 💡 Mudou de 'quantidade' para 'nivel'
 
-    const validation = validateFields(req.body, ['item', 'quantidade']);
-    if (validation) return badRequest(res, validation);
-
-    const abrigoExists = await pool.query(
-      'SELECT id FROM Abrigos WHERE id = $1 AND ativo = true',
-      [id]
-    );
-
-    if (abrigoExists.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Abrigo não encontrado' });
+    // Validação
+    const validLevels = ['urgente', 'em_falta', 'suficiente', 'em_excesso'];
+    if (!item || !nivel || !validLevels.includes(nivel)) {
+        return badRequest(res, 'Item e um nível válido são obrigatórios');
     }
 
-    // Map frontend fields to DB schema (init-db.sql)
-    // frontend sends: { item, quantidade, urgencia }
-    // DB columns: item, quantidade_necessaria, prioridade, categoria, unidade, descricao
     const categoria = 'outro';
-    const quantidadeNec = parseInt(String(quantidade).trim()) || null;
-    const prioridade = urgencia || 'media';
 
     const insertQuery = `
-      INSERT INTO necessidades (abrigo_id, categoria, item, quantidade_necessaria, unidade, prioridade, descricao)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, abrigo_id, categoria, item, quantidade_necessaria AS quantidade, unidade, prioridade AS urgencia, descricao, data_solicitacao
+      INSERT INTO necessidades (abrigo_id, categoria, item, nivel, unidade, prioridade)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
     `;
 
-    const result = await pool.query(insertQuery, [id, categoria, item.trim(), quantidadeNec, null, prioridade, null]);
+    // Nota: Usamos o 'nivel' também como prioridade ou mantemos lógica separada se desejar
+    // Aqui estou salvando 'nivel' na coluna nivel.
+    const result = await pool.query(insertQuery, [id, categoria, item.trim(), nivel, null, 'media']);
 
-    console.log('Need added:', result.rows[0].item);
     res.status(201).json({ success: true, necessidade: result.rows[0] });
 
   } catch (error) {
@@ -673,31 +719,33 @@ app.post('/api/abrigos/:id/necessidades', async (req, res) => {
   }
 });
 
-// Atualizar necessidade
+// PUT: Atualizar necessidade (Atualizado)
 app.put('/api/necessidades/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { item, quantidade } = req.body;
+    const { item, nivel } = req.body; // 💡 Mudou de 'quantidade' para 'nivel'
 
-    const validation = validateFields(req.body, ['item', 'quantidade']);
-    if (validation) return badRequest(res, validation);
+    const validLevels = ['urgente', 'em_falta', 'suficiente', 'em_excesso'];
+    if (!item || !validLevels.includes(nivel)) {
+         return res.status(400).json({ success: false, error: 'Item e nível válido são obrigatórios' });
+    }
 
-    // Update mapping for init-db.sql schema: quantidade_necessaria column
-    const quantidadeNec = parseInt(String(quantidade).trim()) || null;
     const result = await pool.query(
-      `UPDATE necessidades SET item = $1, quantidade_necessaria = $2 WHERE id = $3 RETURNING id, abrigo_id, categoria, item, quantidade_necessaria AS quantidade, unidade, prioridade AS urgencia, descricao, data_solicitacao`,
-      [item.trim(), quantidadeNec, id]
+      `UPDATE necessidades
+       SET item = $1, nivel = $2
+       WHERE id = $3
+       RETURNING *`,
+      [item.trim(), nivel, id]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Necessidade não encontrada' });
     }
 
-    console.log('Need updated:', result.rows[0].item);
     res.json({ success: true, necessidade: result.rows[0] });
 
   } catch (error) {
-    handleError(res, error, 'Failed to update need');
+    handleError(res, error, 'Falha ao atualizar necessidade');
   }
 });
 

@@ -416,8 +416,10 @@ export default function ShelterDetail() {
             <ul className={styles.needsList}>
               {needs.map(need => (
                 <li key={need.id} className={styles.needsItem}>
-                  <p>{need.item}</p>
-                  {need.quantidade && <span>{need.quantidade}</span>}
+                    <p>{need.item}</p>
+		    <span className={`${styles.levelBadge} ${styles['level-' + need.nivel]}`}>
+			{need.nivel.replace('_', ' ')}
+		    </span>
                 </li>
               ))}
             </ul>

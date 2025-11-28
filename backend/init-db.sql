@@ -18,7 +18,7 @@ CREATE TABLE usuarios (
     ativo BOOLEAN DEFAULT true
 );
 
--- Tabela de abrigos 
+-- Tabela de abrigos
 CREATE TABLE abrigos (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(200) NOT NULL,
@@ -162,8 +162,12 @@ SELECT setval('usuarios_id_seq', (SELECT MAX(id) FROM usuarios));
 SELECT setval('abrigos_id_seq', (SELECT MAX(id) FROM abrigos));
 SELECT setval('necessidades_id_seq', (SELECT MAX(id) FROM necessidades));
 
+ALTER TABLE necessidades
+DROP COLUMN quantidade_necessaria,
+ADD COLUMN nivel VARCHAR(20) CHECK (nivel IN ('urgente', 'em_falta', 'suficiente', 'em_excesso')) DEFAULT 'em_falta';
+
 -- Resumo
-SELECT 
+SELECT
     'BANCO INICIALIZADO!' as status,
     (SELECT COUNT(*) FROM usuarios) as usuarios,
     (SELECT COUNT(*) FROM abrigos) as abrigos_ativos,

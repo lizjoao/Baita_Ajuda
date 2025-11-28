@@ -37,6 +37,21 @@
 }
 .backLink:hover { background-color: #5a6268; }
 
+/* Adicione estas classes */
+.levelBadge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-left: 4px;
+}
+
+.level-urgente { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.level-em_falta { background-color: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+.level-suficiente { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.level-em_excesso { background-color: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
 /* =========================================
    2. ESTRUTURA DOS CARDS
    ========================================= */
@@ -125,13 +140,6 @@
 .availableStatus, .available { color: #28a745; font-weight: 700; }
 .fullStatus, .full { color: #dc3545; font-weight: 700; }
 
-/* Tags */
-.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 0.25rem; }
-.tags span { padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; }
-.tagPets { background-color: #e3f2fd; color: #007bff; border: 1px solid #cce5ff; }
-.tagFeminino { background-color: #fcebeb; color: #dc3545; }
-.tagMasculino { background-color: #e6f7ff; color: #007bff; }
-.tagGeneral { background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; }
 
 /* =========================================
    4. SEÇÃO DO MAPA
@@ -270,6 +278,15 @@
   gap: 8px;
 }
 .btnHighlight:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4); }
+
+/* Tags */
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 0.25rem; }
+.tags span { padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; }
+.tagPets { background-color: #e3f2fd; color: #007bff; border: 1px solid #cce5ff; }
+.tagFeminino { background-color: #fcebeb; color: #dc3545; }
+.tagMasculino { background-color: #e6f7ff; color: #007bff; }
+.tagGeneral { background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; }
+
 
 /* =========================================
    8. LISTAS (Necessidades, Reviews, Doações)

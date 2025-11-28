@@ -37,6 +37,8 @@
 }
 .backLink:hover { background-color: #5a6268; }
 
+
+
 /* =========================================
    2. CARD STRUCTURE
    ========================================= */
@@ -245,16 +247,6 @@
   box-shadow: 0 2px 5px rgba(0, 123, 255, 0.1);
 }
 
-.needsItem span {
-  background-color: #007bff;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  line-height: 1;
-}
-
 /* Botão de Doação RESTAURADO */
 .donateButton {
   background: linear-gradient(135deg, #007bff 0%, #667eea 100%);
@@ -332,6 +324,23 @@
 .donationItem { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; }
 .quantityInput { width: 70px; text-align: center; margin-bottom: 0 !important; }
 .modalActions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
+
+
+/* Adicione estas classes */
+.levelBadge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-left: 4px;
+}
+
+.level-urgente { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.level-em_falta { background-color: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+.level-suficiente { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.level-em_excesso { background-color: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
 
 /* Responsive */
 @media (max-width: 900px) {

@@ -31,7 +31,7 @@ export default function ManageShelter() {
 
   // Estados de Edição de Necessidades
   const [showAddNeed, setShowAddNeed] = useState(false);
-  const [newNeed, setNewNeed] = useState({ item: '', quantidade: '' });
+  const [newNeed, setNewNeed] = useState({ item: '', nivel: 'em_falta' });
   const [editingNeed, setEditingNeed] = useState(null);
 
   // 1. Carregar Dados
@@ -150,18 +150,27 @@ export default function ManageShelter() {
     } catch (err) { alert('Erro ao adicionar'); }
   };
 
-  const handleDeleteNeed = async (needId) => {
-      if(!confirm("Remover este item?")) return;
+    const handleDeleteNeed = async (needId) => {
+      console.log("Deletando ID:", needId);
+      // if(!confirm("Tem certeza?")) return; // Removido temporariamente para garantir funcionamento
+
       try {
-          const response = await fetch(`http://localhost:5000/api/necessidades/${needId}`, { method: 'DELETE' });
-          if (response.ok) {
+          const response = await fetch(`http://localhost:5000/api/necessidades/${needId}`, {
+              method: 'DELETE'
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
               setNecessidades(prev => prev.filter(n => n.id !== needId));
           } else {
-              alert('Erro ao remover');
+              alert(data.error || 'Erro ao remover necessidade');
           }
-      } catch (err) { alert('Erro ao remover'); }
+      } catch (err) {
+          console.error(err);
+          alert('Erro de conexão ao remover');
+      }
   };
-
   const handleUpdateNeed = async (needId, updatedNeed) => {
     try {
         const response = await fetch(`http://localhost:5000/api/necessidades/${needId}`, {
@@ -355,7 +364,6 @@ export default function ManageShelter() {
             {/* Bloco de Descrição/Restrições (Visível apenas no modo leitura se existir) */}
             {!isEditingInfo && (abrigo.descricao || abrigo.restricoes) && (
                 <div className={styles.detailsSection}>
-                    <hr className={styles.divider} />
                     {abrigo.descricao && <div className={styles.detailBlock}><h3>Sobre</h3><p>{abrigo.descricao}</p></div>}
                     {abrigo.restricoes && <div className={styles.detailBlock}><div className={styles.alertBox}><p>⚠️ {abrigo.restricoes}</p></div></div>}
                 </div>
@@ -378,8 +386,17 @@ export default function ManageShelter() {
                                 <input value={newNeed.item} onChange={e => setNewNeed({...newNeed, item: e.target.value})} required placeholder="Ex: Cobertores"/>
                             </div>
                             <div className={styles.formGroup}>
-                                <label>Quantidade</label>
-                                <input value={newNeed.quantidade} onChange={e => setNewNeed({...newNeed, quantidade: e.target.value})} required placeholder="Ex: 10"/>
+				    <label>Nível de Necessidade</label>
+				    <select
+					value={newNeed.nivel}
+					onChange={(e) => setNewNeed({ ...newNeed, nivel: e.target.value })}
+					className={styles.input} // Use sua classe de estilo de input
+				    >
+				    <option value="urgente">Urgente</option>
+				    <option value="em_falta">Em Falta</option>
+				    <option value="suficiente">Suficiente</option>
+				    <option value="em_excesso">Em Excesso</option>
+				    </select>
                             </div>
                         </div>
                         <div className={styles.formActions}>
@@ -399,7 +416,9 @@ export default function ManageShelter() {
                             <div className={styles.needContent}>
                                 <div>
                                     <span className={styles.itemName}>{need.item}</span>
-                                    <span className={styles.itemQuantity} style={{marginLeft: '10px'}}>{need.quantidade}</span>
+				    <span className={`${styles.levelBadge} ${styles['level-' + need.nivel]}`}>
+					{need.nivel.replace('_', ' ')}
+				    </span>
                                 </div>
                                 <div className={styles.needActions}>
                                     <button className={styles.btnHighlight} onClick={() => setEditingNeed(need.id)}>Editar</button>
@@ -454,15 +473,39 @@ export default function ManageShelter() {
 
 // Componente auxiliar para o formulário de edição de necessidade
 function EditNeedForm({ need, onSave, onCancel }) {
-    const [data, setData] = useState({ item: need.item, quantidade: need.quantidade });
+
+    const [data, setData] = useState({ item: need.item, nivel: need.nivel || 'em_falta' });
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(data);
+    };
+
     return (
-        <div style={{width: '100%', display:'flex', gap:'1rem', alignItems:'center', flexWrap:'wrap'}}>
-            <input value={data.item} onChange={e => setData({...data, item: e.target.value})} style={{flex:1, padding:'0.5rem', borderRadius:'6px', border:'1px solid #ccc'}} />
-            <input value={data.quantidade} onChange={e => setData({...data, quantidade: e.target.value})} style={{width:'100px', padding:'0.5rem', borderRadius:'6px', border:'1px solid #ccc'}} />
+        <form onSubmit={handleSubmit} style={{width: '100%', display:'flex', gap:'1rem', alignItems:'center'}}>
+            <input
+		className={styles.input}
+                value={data.item}
+                onChange={e => setData({...data, item: e.target.value})}
+                style={{flex:1, padding:'0.5rem', borderRadius:'6px', border:'1px solid #ccc'}}
+                required
+            />
+            {/* Novo Select de Nível */}
+            <select
+                value={data.nivel}
+                onChange={e => setData({...data, nivel: e.target.value})}
+                style={{width:'140px', padding:'0.5rem', borderRadius:'6px', border:'1px solid #ccc'}}
+            >
+                <option value="urgente">Urgente</option>
+                <option value="em_falta">Em Falta</option>
+                <option value="suficiente">Suficiente</option>
+                <option value="em_excesso">Excesso</option>
+            </select>
+
             <div style={{display:'flex', gap:'0.5rem'}}>
-                <button className={styles.btnPrimary} onClick={() => onSave(data)}>OK</button>
-                <button className={styles.btnSecondary} onClick={onCancel}>X</button>
+                <button type="submit" className={styles.btnHighLight}>OK</button>
+                <button type="button" className={styles.btnHighLight} onClick={onCancel}>X</button>
             </div>
-        </div>
+        </form>
     );
 }
